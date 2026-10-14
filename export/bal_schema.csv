@@ -1,0 +1,147 @@
+column,dtype
+patient_id,str
+hospitalization_id,str
+mrn,str
+admission_dttm,datetime64[ns]
+discharge_dttm,datetime64[ns]
+hosp_admission_date,object
+hosp_discharge_date,object
+first_intubation_date,object
+day_of_intubation,Int64
+day_of_hospitalization,Int64
+bal_collection_dttm,datetime64[ns]
+bal_collection_date,object
+bal_test_type,str
+bal_test_type_category,str
+procedure_name,str
+order_accession_num,str
+side,str
+bal_type,str
+has_bal,bool
+bal_rbc_count,float64
+bal_wbc_count,float64
+bal_pct_neutro,float64
+bal_pct_plasma,float64
+bal_pct_other,float64
+bal_pct_macro,float64
+bal_pct_mono,float64
+bal_pct_lympho,float64
+bal_pct_eos,float64
+abs_lymphocytes,float64
+abs_neutrophils,float64
+abs_eosinophils,float64
+toxic_granulation,str
+wbc,float64
+crp,float64
+ldh,float64
+creatine_kinase,float64
+procalcitonin,float64
+ferritin,float64
+troponin_i,float64
+creatinine,float64
+ast,float64
+d_dimer,float64
+max_daily_temp,float64
+amylase,float64
+pathogen_result,str
+pathogen_virus,bool
+pathogen_bacteria,bool
+pathogen_fungi,bool
+pathogen_resistance,bool
+pathogen_aspergillus,bool
+pathogen_comments,str
+pathogen_comments_intra,bool
+pathogen_comments_extra,bool
+pathogen_galactomannan,float64
+organism_1_quantity,str
+organism_1_name,str
+organism_2_quantity,str
+organism_2_name,str
+organism_3_quantity,str
+organism_3_name,str
+organism_4_quantity,str
+organism_4_name,str
+organism_5_quantity,str
+organism_5_name,str
+organism_6_quantity,str
+organism_6_name,str
+organism_id1,str
+organism_id2,str
+organism_id3,str
+organism_id4,str
+organism_id5,str
+organism_id6,str
+negative_for_growth,str
+gram_stain_report_organisms,str
+gram_stain_report_wbc,str
+gram_stain_report_rbc,str
+gram_stain_report_stain,str
+culture_fungal_w_smear_bal_organism_id_1,str
+culture_fungal_w_smear_bal_organism_id_2,str
+culture_fungal_w_smear_bal_organism_id_3,str
+fungal_culture_stain_report_1,str
+fungal_culture_stain_report_2,str
+fungal_culture_stain_report_3,str
+aspergillus galactomannan antigen(nmh/lfh),str
+"pneumocystis jirovecii(carinii), dfa (nmh/lfh)",str
+respiratory_mrsa_pcr,str
+acinetobacter calcoaceticus-baumannii complex,str
+adenovirus_lower_resp,str
+chlamydia_pneumoniae_lower_resp,str
+coronavirus,str
+ctx-m,str
+enterobacter cloacae complex,str
+escherichia coli,str
+haemophilus influenzae,str
+human_metapneumovirus_lower_resp,str
+human_rhinovirus_enterovirus_lower_resp,str
+imp,str
+influenza a,str
+influenza b,str
+klebsiella aerogenes,str
+klebsiella oxytoca,str
+klebsiella pneumoniae group,str
+kpc,str
+legionella pneumophila,str
+meca/c and mrej,str
+moraxella catarrhalis,str
+mycoplasma_pneumoniae_lower_resp,str
+ndm,str
+oxa-48-like,str
+parainfluenza virus,str
+proteus spp,str
+pseudomonas aeruginosa,str
+respiratory syncytial virus,str
+serratia marcescens,str
+staphylococcus aureus,str
+streptococcus agalactiae,str
+streptococcus pneumoniae,str
+streptococcus pyogenes,str
+vim,str
+covid_19,str
+adenovirus,str
+adenovirus - rvpdmb,str
+bordetella parapertussis,str
+bordetella pertussis,str
+chlamydia pneumoniae,str
+coronavirus 229e,str
+coronavirus hku1,str
+coronavirus nl63,str
+coronavirus oc43,str
+human metapneumovirus,str
+human rhinovirus/enterovirus,str
+influenza a h1 (seasonal),str
+influenza a h1-2009,str
+influenza a h3 (seasonal),str
+influenza-a respan23,str
+influenza-b respan21,str
+mycoplasma pneumoniae,str
+para influ 1,str
+para influ 2,str
+para influ 3,str
+parainfluenza virus 4,str
+respiratory syncytial-virus respan22,str
+sars-cov-2,str
+"streptococcus pneumoniae antigen,urine 1",str
+legionella antigen (eia) urine 1,str
+comments,str

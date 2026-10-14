@@ -1,0 +1,990 @@
+<title>ICU Infection Timeline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: cohort list left, one patient's synced lanes right.
+   Colour: cool clinical paper; one blue ramp = level of respiratory support; red is reserved for "positive / abnormal". */
+:root {
+  --font: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --bg: #eef1f5; --panel: #ffffff; --ink: #1c2733; --ink2: #52606d; --ink3: #6b7886;
+  --line: #d5dce5; --grid: #e6ebf1; --grid2: #c8d0da; --accent: #245fa8; --accent-soft: #e8f0fb;
+  --alert: #c92a2a; --alert-soft: #fdeded; --alert-line: #f0c4c4; --shadow: 0 6px 20px rgba(28,39,51,.14);
+  --on-bar: #ffffff; --icu-tint: rgba(36,95,168,.07); --cursor: #6b7a8c; --badge-bg: #1c2733; --badge-fg: #ffffff;
+
+  --c-icu: #245fa8; --c-stepdown: #7ea6d8; --c-ward: #d3dce8; --c-ed: #ecd3ac; --c-otherloc: #e3e6ea;
+  --d-imv: #2a78d6; --d-nippv: #6250d6; --d-cpap: #e87ba4; --d-hf: #1baf7a; --d-fm: #eda100; --d-nc: #eb6834; --d-other: #8a95a3; --on-amber: #1c2733;
+  --c-fio2: #0e7c86; --c-peep: #6250d6;
+  --p-ne: #2a78d6; --p-vaso: #6250d6; --p-epi: #e34948; --p-phe: #1baf7a; --p-dopa: #eda100; --p-ang: #e87ba4; --p-total: #1c2733;
+  --c-pos: #c92a2a; --c-neg: #7b8794;
+  --a-bact: #0f766e; --a-fung: #7c5cbf; --a-viral: #b45f06;
+  --bal-bact: #c2410c; --bal-viral: #5b4bc4; --bal-fung: #a16207; --bal-col: #8a7a5c; --bal-neg: #7b8794;
+  --dn: #d9622b; --dm: #3d6fb6; --dl: #2a9d8f; --de: #d9a21b; --do: #a3adb9;
+  --sus-s: #1a7f4b; --sus-i: #a15c00; --sus-r: #c92a2a;
+  --c-temp: #d9480f; --c-hot: #c92a2a; --c-cold: #2563a8; --band-hot: rgba(201,42,42,.08); --band-cold: rgba(37,99,168,.08);
+  --c-wbc: #a8326b; --c-lab: #4f46b8;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0e1620; --panel: #151f2b; --ink: #e6ebf2; --ink2: #aab6c4; --ink3: #8794a3;
+    --line: #2a3646; --grid: #212c3a; --grid2: #34425a; --accent: #6ea3e6; --accent-soft: #1b2a3f;
+    --alert: #f07575; --alert-soft: #2c1a1c; --alert-line: #5a2c2f; --shadow: 0 6px 20px rgba(0,0,0,.5);
+    --on-bar: #0b1420; --icu-tint: rgba(110,163,230,.09); --cursor: #8fa0b4; --badge-bg: #e6ebf2; --badge-fg: #0e1620;
+    --c-icu: #5b95dd; --c-stepdown: #3f6494; --c-ward: #2c3a4d; --c-ed: #6b5636; --c-otherloc: #2a3340;
+    --d-imv: #3987e5; --d-nippv: #9085e9; --d-cpap: #d55181; --d-hf: #199e70; --d-fm: #c98500; --d-nc: #d95926; --d-other: #8794a3; --on-amber: #0b1420;
+    --c-fio2: #3bb7c2; --c-peep: #9a8df0;
+    --p-ne: #3987e5; --p-vaso: #9085e9; --p-epi: #e66767; --p-phe: #199e70; --p-dopa: #c98500; --p-ang: #d55181; --p-total: #e6ebf2;
+    --c-pos: #f07575; --c-neg: #8794a3;
+    --a-bact: #3fb6aa; --a-fung: #a78be0; --a-viral: #e0903a;
+    --bal-bact: #f08a5d; --bal-viral: #a193f2; --bal-fung: #e0b04a; --bal-col: #b3a37f; --bal-neg: #8794a3;
+    --dn: #ee8654; --dm: #6e9be0; --dl: #4cc2b3; --de: #e8bb4a; --do: #6f7d8c;
+    --sus-s: #4cc38a; --sus-i: #e8b04a; --sus-r: #f07575;
+    --c-temp: #f08a52; --c-hot: #f07575; --c-cold: #6ea3e6; --band-hot: rgba(240,117,117,.12); --band-cold: rgba(110,163,230,.12);
+    --c-wbc: #e57bb0; --c-lab: #9a93ee;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0e1620; --panel: #151f2b; --ink: #e6ebf2; --ink2: #aab6c4; --ink3: #8794a3;
+  --line: #2a3646; --grid: #212c3a; --grid2: #34425a; --accent: #6ea3e6; --accent-soft: #1b2a3f;
+  --alert: #f07575; --alert-soft: #2c1a1c; --alert-line: #5a2c2f; --shadow: 0 6px 20px rgba(0,0,0,.5);
+  --on-bar: #0b1420; --icu-tint: rgba(110,163,230,.09); --cursor: #8fa0b4; --badge-bg: #e6ebf2; --badge-fg: #0e1620;
+  --c-icu: #5b95dd; --c-stepdown: #3f6494; --c-ward: #2c3a4d; --c-ed: #6b5636; --c-otherloc: #2a3340;
+  --d-imv: #3987e5; --d-nippv: #9085e9; --d-cpap: #d55181; --d-hf: #199e70; --d-fm: #c98500; --d-nc: #d95926; --d-other: #8794a3; --on-amber: #0b1420;
+  --c-fio2: #3bb7c2; --c-peep: #9a8df0;
+  --p-ne: #3987e5; --p-vaso: #9085e9; --p-epi: #e66767; --p-phe: #199e70; --p-dopa: #c98500; --p-ang: #d55181; --p-total: #e6ebf2;
+  --c-pos: #f07575; --c-neg: #8794a3;
+  --a-bact: #3fb6aa; --a-fung: #a78be0; --a-viral: #e0903a;
+  --bal-bact: #f08a5d; --bal-viral: #a193f2; --bal-fung: #e0b04a; --bal-col: #b3a37f; --bal-neg: #8794a3;
+  --dn: #ee8654; --dm: #6e9be0; --dl: #4cc2b3; --de: #e8bb4a; --do: #6f7d8c;
+  --sus-s: #4cc38a; --sus-i: #e8b04a; --sus-r: #f07575;
+  --c-temp: #f08a52; --c-hot: #f07575; --c-cold: #6ea3e6; --band-hot: rgba(240,117,117,.12); --band-cold: rgba(110,163,230,.12);
+  --c-wbc: #e57bb0; --c-lab: #9a93ee;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 var(--font); font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
+button, select, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.app { height: 100%; display: flex; flex-direction: column; }
+.top { flex: none; min-height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 16px; background: var(--panel); border-bottom: 1px solid var(--line); }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 15px; white-space: nowrap; }
+.mark { width: 14px; height: 14px; border-radius: 3px; background: linear-gradient(90deg, var(--c-icu) 0 55%, var(--c-stepdown) 55% 100%); }
+.top-r { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.src { color: var(--ink3); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.theme { border: 1px solid var(--line); background: var(--panel); border-radius: 7px; padding: 4px 10px; font-size: 12.5px; color: var(--ink2); }
+.theme:hover { background: var(--accent-soft); color: var(--accent); }
+
+.body { flex: 1; min-height: 0; display: grid; grid-template-columns: 320px minmax(0, 1fr); }
+.sidebar { display: flex; flex-direction: column; min-height: 0; background: var(--panel); border-right: 1px solid var(--line); }
+.side-head { padding: 14px 16px 6px; display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.side-head h2 { margin: 0; font-size: 14px; font-weight: 600; }
+.count { color: var(--ink3); font-size: 12px; }
+.count b { color: var(--ink); font-weight: 600; }
+.filters { padding: 6px 16px 12px; border-bottom: 1px solid var(--grid); display: grid; gap: 10px; }
+.search { width: 100%; padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); }
+.search:focus { background: var(--panel); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); font-size: 12px; color: var(--ink2); }
+.chip:hover { border-color: var(--grid2); }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-bar); }
+.selects { display: grid; grid-template-columns: 1.4fr 1fr 1.1fr; gap: 8px; }
+.selects label, .lab-pick { display: grid; gap: 3px; font-size: 11.5px; color: var(--ink3); min-width: 0; }
+select { padding: 5px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); width: 100%; min-width: 0; }
+#selOrg { text-transform: capitalize; }
+.link { justify-self: start; background: none; border: 0; padding: 0; color: var(--accent); font-size: 12.5px; text-decoration: underline; text-underline-offset: 2px; }
+.plist { list-style: none; margin: 0; padding: 4px 0 12px; overflow-y: auto; flex: 1; min-height: 0; }
+.plist .none { padding: 18px 16px; color: var(--ink3); }
+.prow { width: 100%; text-align: left; background: none; border: 0; border-left: 3px solid transparent; padding: 8px 16px 8px 13px; display: grid; gap: 1px; }
+.prow:hover { background: var(--bg); }
+.prow[aria-current="true"] { background: var(--accent-soft); border-left-color: var(--accent); }
+.prow-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pid { font-weight: 600; }
+.prow-sub { color: var(--ink3); font-size: 12px; }
+.tags { display: flex; gap: 4px; }
+.tag { font-style: normal; font-size: 10.5px; font-weight: 600; padding: 1px 6px; border-radius: 4px; background: var(--grid); color: var(--ink2); }
+.t-imv { background: var(--accent-soft); color: var(--accent); }
+.t-pressor { background: var(--grid); color: var(--c-lab); }
+.t-cx { background: var(--alert-soft); color: var(--alert); }
+
+.main { overflow: auto; padding: 18px 24px 28px; min-width: 0; }
+.phead { display: grid; gap: 14px; margin-bottom: 14px; }
+.phead h1 { margin: 0; font-size: 20px; font-weight: 600; text-wrap: balance; }
+.phead-id p { margin: 2px 0 0; color: var(--ink2); }
+.stats { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: grid; gap: 1px; min-width: 0; }
+.stat-v { font-size: 19px; font-weight: 600; }
+.stat-l { color: var(--ink2); font-size: 12px; }
+.stat-s { color: var(--ink3); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stat.alert { border-color: var(--alert-line); background: var(--alert-soft); }
+.stat.alert .stat-v { color: var(--alert); }
+
+.toolbar { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; background: var(--panel); }
+.seg button { border: 0; background: none; padding: 6px 12px; border-right: 1px solid var(--grid); }
+.seg button:last-child { border-right: 0; }
+.seg button:hover:not(:disabled) { background: var(--accent-soft); color: var(--accent); }
+.seg button:disabled { color: var(--ink3); opacity: .5; cursor: default; }
+.spacer { flex: 1; }
+.hint { color: var(--ink3); font-size: 12px; align-self: center; }
+
+.chart-card { position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: clip; }
+.plot { position: relative; width: 100%; touch-action: pan-y; }
+.ruler { position: sticky; top: 0; z-index: 3; background: var(--panel); border-bottom: 1px solid var(--line); height: 64px; }
+#ovw { cursor: pointer; touch-action: none; }
+.ruler svg, .lanes svg { display: block; }
+.xbadge { position: absolute; top: 33px; padding: 2px 7px; border-radius: 4px; font-size: 11px; white-space: nowrap; background: var(--badge-bg); color: var(--badge-fg); pointer-events: none; display: none; transform: translateX(-50%); }
+.xline { position: absolute; top: 64px; bottom: 0; width: 1px; background: var(--cursor); pointer-events: none; display: none; z-index: 2; }
+.lanes { cursor: grab; user-select: none; -webkit-user-select: none; }
+.lanes.drag { cursor: grabbing; }
+.tip { position: fixed; z-index: 20; pointer-events: none; background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; box-shadow: var(--shadow); font-size: 12px; max-width: 320px; display: none; }
+.tip .tt { font-weight: 600; margin-bottom: 4px; padding-left: 6px; border-left: 3px solid var(--grid2); }
+.tip .tr { display: flex; gap: 12px; justify-content: space-between; min-width: 200px; line-height: 1.5; }
+.tip .tr span:first-child { color: var(--ink3); }
+.tip .tr span:last-child { text-align: right; }
+.t-bal { background: color-mix(in srgb, var(--bal-viral) 14%, transparent); color: var(--bal-viral); }
+.bal-card { margin-top: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px 4px; }
+.bal-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.bal-head h2 { font-size: 15px; margin: 0; font-weight: 600; }
+.bal-head .sub { color: var(--ink3); font-size: 12.5px; }
+.syn { font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 999px; border: 1px dashed var(--grid2); color: var(--ink2); }
+.bal { border-top: 1px solid var(--grid); margin-top: 12px; padding: 14px 0 16px; scroll-margin-top: 14px; border-radius: 4px; }
+.bal:first-of-type { margin-top: 10px; }
+.bal.flash, .susc-card.flash { animation: balflash 1.6s ease-out; }
+@keyframes balflash { 0% { background: color-mix(in srgb, var(--accent) 16%, transparent); } 100% { background: transparent; } }
+.bal-top { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.bal-title { font-weight: 600; font-size: 14px; }
+.bal-when { color: var(--ink2); font-size: 12.5px; }
+.bal-top .spacer { flex: 1; }
+.bal-meta { color: var(--ink3); font-size: 12px; margin-top: 2px; }
+.cat { font-size: 11px; font-weight: 600; padding: 1px 9px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+.cat.bacterial { color: var(--bal-bact); } .cat.viral { color: var(--bal-viral); } .cat.fungal { color: var(--bal-fung); } .cat.colonization { color: var(--bal-col); border-style: dashed; } .cat.none { color: var(--ink3); }
+.linkbtn { font: inherit; font-size: 12px; color: var(--accent); background: none; border: 1px solid var(--line); border-radius: 6px; padding: 3px 9px; cursor: pointer; }
+.linkbtn:hover { border-color: var(--accent); }
+.bal-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(205px, 1fr)); gap: 16px 24px; margin-top: 12px; }
+.bal-sec h4 { margin: 0 0 6px; font-size: 10.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--ink3); font-weight: 600; }
+.bal-sec .big { font-size: 20px; font-weight: 600; line-height: 1.2; }
+.bal-sec .big small { font-size: 11.5px; color: var(--ink3); font-weight: 400; margin-left: 3px; }
+.bal-sec .row { font-size: 12.5px; line-height: 1.55; color: var(--ink2); }
+.bal-sec .row b { color: var(--ink); font-weight: 600; }
+.bal-sec .none { color: var(--ink3); font-size: 12.5px; font-style: italic; }
+.dbar { display: flex; height: 12px; border-radius: 4px; overflow: hidden; background: var(--grid); margin: 9px 0 6px; }
+.dbar i { display: block; height: 100%; }
+.dleg { display: flex; flex-wrap: wrap; gap: 2px 11px; font-size: 11.5px; color: var(--ink2); }
+.dleg span::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 2px; background: var(--k); margin-right: 4px; vertical-align: -0.5px; }
+.pill { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 12px; margin: 0 5px 5px 0; border: 1px solid var(--line); color: var(--ink2); }
+.pill.hit { font-weight: 600; border-color: transparent; background: color-mix(in srgb, var(--k, var(--alert)) 13%, transparent); color: var(--k, var(--alert)); }
+.pill small { font-weight: 400; opacity: .85; margin-left: 4px; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; background: var(--bal-bact); }
+.dot.minor { background: transparent; border: 1.5px solid var(--bal-neg); }
+.nt { white-space: nowrap; color: var(--ink3); font-style: italic; font-size: 12px; margin-left: 2px; }
+.susc-card { margin-top: 14px; }
+.susc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 14px 24px; margin: 10px 0 14px; }
+.susc-org h3 { margin: 0 0 2px; font-size: 14px; font-weight: 600; }
+.susc-sum { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; color: var(--ink2); margin-bottom: 4px; }
+.susc-sum b { font-weight: 600; }
+.susc-res { font-size: 12px; color: var(--sus-r); margin-bottom: 6px; }
+.stbl { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.stbl th { text-align: left; font-size: 10.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--ink3); font-weight: 600; padding: 4px 8px 4px 0; border-bottom: 1px solid var(--grid2); }
+.stbl td { padding: 4px 8px 4px 0; border-bottom: 1px solid var(--grid); color: var(--ink); }
+.stbl td.mic { color: var(--ink3); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sc { display: inline-block; min-width: 54px; white-space: nowrap; text-align: center; font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: color-mix(in srgb, var(--k) 14%, transparent); color: var(--k); }
+.sc.S { --k: var(--sus-s); } .sc.IND { --k: var(--sus-i); } .sc.NS { --k: var(--sus-r); } .sc.NA { --k: var(--ink3); }
+.ccat { font-size: 10.5px; color: var(--ink3); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.orgbtn { font: inherit; font-size: 12.5px; text-align: left; background: none; border: 0; padding: 0; color: inherit; cursor: pointer; }
+.orgbtn:hover b { text-decoration: underline; }
+.orgbtn .go { color: var(--accent); font-size: 11.5px; margin-left: 4px; }
+.bal-note { color: var(--ink3); font-size: 12px; margin-top: 10px; }
+.credit { margin: 14px 2px 0; color: var(--ink3); font-size: 11px; }
+.foot { margin: 12px 2px 0; color: var(--ink3); font-size: 12px; max-width: 110ch; }
+.state { max-width: 520px; margin: 12vh auto; padding: 0 24px; color: var(--ink2); }
+svg text { font-family: var(--font); }
+
+@media (max-width: 1100px) { .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 860px) {
+  html, body { height: auto; }
+  .app { height: auto; min-height: 100%; }
+  .body { display: block; }
+  .sidebar { border-right: 0; border-bottom: 1px solid var(--line); max-height: 420px; }
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .main { overflow: visible; padding: 14px 16px 24px; }
+  .src { display: none; }
+  .selects { grid-template-columns: 1fr 1fr; }
+  .hint { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="brand"><span class="mark" aria-hidden="true"></span>ICU infection timeline</div>
+    <div class="top-r">
+      <span class="src" id="src"></span>
+      <button type="button" class="theme" id="themeBtn" aria-label="Switch colour theme">Dark</button>
+    </div>
+  </header>
+  <div class="body">
+    <aside class="sidebar" aria-label="Cohort">
+      <div class="side-head"><h2>Cohort</h2><span class="count" id="count"></span></div>
+      <div class="filters">
+        <input class="search" id="q" type="search" placeholder="Search hospitalization or patient ID" aria-label="Search by ID">
+        <div class="chips" id="chips" role="group" aria-label="Filters"></div>
+        <div class="selects">
+          <label>Organism <select id="selOrg"></select></label>
+          <label>ICU time <select id="selIcu">
+            <option value="0">Any</option><option value="24">≥ 24 h</option><option value="48">≥ 48 h</option><option value="96">≥ 4 days</option><option value="168">≥ 7 days</option>
+          </select></label>
+          <label>Sort by <select id="selSort">
+            <option value="icu_hours">ICU time</option><option value="los_days">Hospital stay</option><option value="n_cultures">Cultures</option><option value="age">Age</option>
+          </select></label>
+        </div>
+        <button type="button" class="link" id="clear" hidden></button>
+      </div>
+      <ul class="plist" id="plist"></ul>
+    </aside>
+    <main class="main" id="main">
+      <section class="phead" id="phead"></section>
+      <div class="toolbar">
+        <div class="seg" role="group" aria-label="Time window">
+          <button type="button" id="vFull">Full stay</button>
+          <button type="button" id="vIcu">ICU stays</button>
+          <button type="button" id="vFirst">First 48 h</button>
+        </div>
+        <div class="seg" role="group" aria-label="Zoom">
+          <button type="button" id="zIn" aria-label="Zoom in">＋</button>
+          <button type="button" id="zOut" aria-label="Zoom out">－</button>
+        </div>
+        <label class="lab-pick">Other labs lane <select id="selLab"></select></label>
+        <span class="spacer"></span>
+        <span class="hint" id="hint">Ctrl + scroll to zoom · drag to pan · hover for details</span>
+      </div>
+      <div class="chart-card" id="card">
+        <div class="plot" id="plot">
+          <div class="ruler" id="rulerWrap"><svg id="ovw" role="presentation"></svg><svg id="ruler" role="presentation"></svg><div class="xbadge" id="xbadge"></div></div>
+          <div class="lanes" id="lanes"><svg id="lanesSvg" role="img" aria-label="Patient timeline"></svg></div>
+          <div class="xline" id="xline"></div>
+        </div>
+      </div>
+      <section class="bal-card" id="balBox" hidden aria-label="BAL results"></section>
+      <section class="bal-card susc-card" id="suscBox" hidden aria-label="Susceptibilities"></section>
+      <p class="foot" id="foot"></p>
+      <p class="credit">2026 Cathy Gao-Howard on behalf of the CLIF Consortium</p>
+    </main>
+  </div>
+</div>
+<div class="tip" id="tip" role="tooltip"></div>
+
+<script id="data" type="application/json">/*__DATA__*/</script>
+<script>
+(function () {
+'use strict';
+var D = JSON.parse(document.getElementById('data').textContent);
+var ROWS = D.rows, P = D.p, META = D.meta, SIRS = META.sirs, TZ = META.timezone || 'UTC';
+var H = 3600000;
+function $(id) { return document.getElementById(id); }
+
+/* ---------- formatting ---------- */
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+var dcache = {};
+function dtf(o) { var k = JSON.stringify(o); return dcache[k] || (dcache[k] = new Intl.DateTimeFormat('en-US', Object.assign({ timeZone: TZ, hourCycle: 'h23' }, o))); }
+function fmtClock(ms) { return dtf({ year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(ms); }
+function parts(ms) { var o = {}; dtf({ month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).formatToParts(ms).forEach(function (p) { o[p.type] = p.value; }); return o; }
+function fmtTick(ms, dayOnly) { var p = parts(ms); return (dayOnly || (p.hour === '00' && p.minute === '00')) ? p.month + ' ' + p.day : p.hour + ':' + p.minute; }
+function fmtOffset(ms, adm) { var h = (ms - adm) / H, a = Math.abs(h); return (h < 0 ? '-' : '+') + (a >= 72 ? (a / 24).toFixed(1) + ' d' : a.toFixed(1) + ' h'); }
+function fmtDur(ms) { var h = ms / H; if (h < 1) return Math.round(h * 60) + ' min'; if (h < 48) return h.toFixed(h < 10 ? 1 : 0) + ' h'; return (h / 24).toFixed(1) + ' d'; }
+function fmtNum(v, d) { if (!isFinite(v)) return ''; var a = Math.abs(v); if (a >= 100) return v.toFixed(0); if (a >= 10) return v.toFixed(1); return String(parseFloat(v.toFixed(d == null ? 2 : d))); }
+function title(s) { return String(s).toLowerCase().replace(/(^|[\s(\/-])([a-z])/g, function (m, a, b) { return a + b.toUpperCase(); }); }
+var GENERA = 'escherichia klebsiella pseudomonas staphylococcus enterococcus proteus serratia acinetobacter enterobacter citrobacter stenotrophomonas bacteroides clostridium clostridioides candida streptococcus prevotella morganella haemophilus'.split(' ');
+function shortOrg(n) {
+  var low = String(n).toLowerCase().trim();
+  if (/^staph\w*\s+aureus/.test(low)) return 'S. aureus';
+  var m = low.match(/^([a-z]+)\s+([a-z]+)\b/);
+  if (m && GENERA.indexOf(m[1]) >= 0 && ['sp', 'species', 'complex', 'group'].indexOf(m[2]) < 0) return m[1][0].toUpperCase() + '. ' + m[2];
+  var t = title(n); return t.length > 18 ? t.slice(0, 17) + '…' : t;
+}
+function abxName(c) { var m = { piperacillin_tazobactam: 'Pip / tazo', ampicillin_sulbactam: 'Amp / sulbactam' }; if (m[c]) return m[c]; var s = c.replace(/_/g, ' '); return s[0].toUpperCase() + s.slice(1); }
+
+/* ---------- vocab ---------- */
+var DEV_VAR = { IMV: '--d-imv', NIPPV: '--d-nippv', CPAP: '--d-cpap', 'High Flow NC': '--d-hf', 'Face Mask': '--d-fm', 'Nasal Cannula': '--d-nc', 'Room Air': '--d-nc', Other: '--d-other' };
+var DEV_RANK = { IMV: 6, NIPPV: 5, CPAP: 4, 'High Flow NC': 3, 'Face Mask': 2, 'Nasal Cannula': 1, 'Room Air': 0, Other: 0 };
+var DEV_LABEL = { IMV: 'Invasive ventilation', NIPPV: 'BiPAP / NIPPV', CPAP: 'CPAP', 'High Flow NC': 'High-flow nasal', 'Face Mask': 'Face mask', 'Nasal Cannula': 'Nasal cannula', 'Room Air': 'Room air', Other: 'Other device' };
+var PR_VAR = { norepinephrine: '--p-ne', vasopressin: '--p-vaso', epinephrine: '--p-epi', phenylephrine: '--p-phe', dopamine: '--p-dopa', angiotensin: '--p-ang' };
+var PR_LABEL = { norepinephrine: 'Norepinephrine', vasopressin: 'Vasopressin', epinephrine: 'Epinephrine', phenylephrine: 'Phenylephrine', dopamine: 'Dopamine', angiotensin: 'Angiotensin II' };
+var PR_ORDER = ['norepinephrine', 'vasopressin', 'epinephrine', 'phenylephrine', 'dopamine', 'angiotensin'];
+var SITES = ['Blood', 'Respiratory', 'Urine', 'Sterile fluid', 'CSF', 'Wound / line', 'Stool', 'Other'];
+var LAB_LABEL = { lactate: 'Lactate', crp: 'CRP', creatinine: 'Creatinine', neutrophils_absolute: 'Neutrophils (abs)', platelet_count: 'Platelets', procalcitonin: 'Procalcitonin' };
+var LOC_VAR = { icu: '--c-icu', stepdown: '--c-stepdown', ward: '--c-ward', ed: '--c-ed' };
+var ABX_VAR = { antibacterial: '--a-bact', antifungal: '--a-fung', antiviral: '--a-viral' };
+var ABX_NAME = { antibacterial: 'Antibacterial', antifungal: 'Antifungal', antiviral: 'Antiviral' };
+var DEV_SHORT = { IMV: 'Ventilator', NIPPV: 'BiPAP', CPAP: 'CPAP', 'High Flow NC': 'High-flow', 'Face Mask': 'Face mask', 'Nasal Cannula': 'Nasal cannula', 'Room Air': 'Room air', Other: 'Other' };
+var COURSE_GAP = 36 * H;
+
+/* ---------- state ---------- */
+var F = { q: '', positive: false, blood: false, imv: false, niv: false, pressor: false, abx: false, fever: false, died: false, bal: false, balpos: false, organism: '', minIcu: 0, sort: 'icu_hours' };
+var TOGGLES = [
+  ['positive', 'Positive culture', 'Any culture with an organism reported'], ['blood', 'Positive blood culture', 'Organism reported from a blood specimen'],
+  ['imv', 'Ventilated', 'Invasive mechanical ventilation at any time'], ['niv', 'NIV / high-flow', 'BiPAP, CPAP or high-flow nasal cannula'],
+  ['pressor', 'Vasopressors', 'Any vasopressor infusion'], ['abx', 'Antimicrobials', 'At least one antibiotic, antifungal or antiviral dose'],
+  ['fever', 'Fever > ' + SIRS.temp_high_c + ' °C', 'Any temperature above the SIRS threshold'], ['died', 'Died in hospital', 'Discharge disposition is Expired']
+];
+var BAL_TOGGLES = [['bal', 'Has BAL', 'At least one bronchoalveolar lavage result'], ['balpos', 'BAL pathogen +', 'A BAL with a bacterial, viral or fungal pathogen']];
+var cur = null, curRow = null, view = [0, 1], labKey = 'lactate', TIPS = [];
+
+function applyFilters() {
+  var q = F.q.trim().toLowerCase();
+  var out = ROWS.filter(function (r) {
+    return (!q || r.id.indexOf(q) >= 0 || r.patient_id.indexOf(q) >= 0) && (!F.positive || r.positive_culture) && (!F.blood || r.blood_culture_positive) &&
+      (!F.imv || r.imv) && (!F.niv || r.niv || r.hfnc) && (!F.pressor || r.pressor) && (!F.abx || r.n_antibiotics > 0) && (!F.fever || r.fever) &&
+      (!F.died || r.died) && (!F.bal || r.n_bal > 0) && (!F.balpos || r.bal_positive) && (!F.organism || r.organisms.indexOf(F.organism) >= 0) && (r.icu_hours || 0) >= F.minIcu;
+  });
+  out.sort(function (a, b) { return (b[F.sort] == null ? -1 : b[F.sort]) - (a[F.sort] == null ? -1 : a[F.sort]); });
+  return out;
+}
+function activeCount() { return ['positive', 'blood', 'imv', 'niv', 'pressor', 'abx', 'fever', 'died', 'bal', 'balpos'].filter(function (k) { return F[k]; }).length + (F.organism ? 1 : 0) + (F.minIcu > 0 ? 1 : 0) + (F.q.trim() ? 1 : 0); }
+
+/* ---------- sidebar ---------- */
+function buildFilterUi() {
+  $('chips').innerHTML = TOGGLES.concat(META.has_bal ? BAL_TOGGLES : []).map(function (t) { return '<button type="button" class="chip" data-k="' + t[0] + '" title="' + esc(t[2]) + '" aria-pressed="false">' + esc(t[1]) + '</button>'; }).join('');
+  var m = {}; ROWS.forEach(function (r) { r.organisms.forEach(function (o) { m[o] = (m[o] || 0) + 1; }); });
+  var orgs = Object.keys(m).sort(function (a, b) { return m[b] - m[a]; });
+  $('selOrg').innerHTML = '<option value="">Any</option>' + orgs.map(function (o) { return '<option value="' + esc(o) + '">' + esc(o.toLowerCase()) + ' (' + m[o] + ')</option>'; }).join('');
+  $('chips').addEventListener('click', function (e) { var b = e.target.closest('button[data-k]'); if (!b) return; F[b.dataset.k] = !F[b.dataset.k]; renderList(); });
+  $('q').addEventListener('input', function (e) { F.q = e.target.value; renderList(); });
+  $('selOrg').addEventListener('change', function (e) { F.organism = e.target.value; renderList(); });
+  $('selIcu').addEventListener('change', function (e) { F.minIcu = Number(e.target.value); renderList(); });
+  $('selSort').addEventListener('change', function (e) { F.sort = e.target.value; renderList(); });
+  $('clear').addEventListener('click', function () {
+    var s = F.sort; F = { q: '', positive: false, blood: false, imv: false, niv: false, pressor: false, abx: false, fever: false, died: false, bal: false, balpos: false, organism: '', minIcu: 0, sort: s };
+    $('q').value = ''; $('selOrg').value = ''; $('selIcu').value = '0'; renderList();
+  });
+  $('plist').addEventListener('click', function (e) { var b = e.target.closest('button[data-id]'); if (b) select(b.dataset.id); });
+}
+function renderList() {
+  var shown = applyFilters();
+  Array.prototype.forEach.call($('chips').children, function (b) { b.setAttribute('aria-pressed', F[b.dataset.k] ? 'true' : 'false'); });
+  $('count').innerHTML = '<b>' + shown.length + '</b> of ' + ROWS.length + ' ICU hospitalizations';
+  var n = activeCount(); $('clear').hidden = n === 0; $('clear').textContent = 'Clear ' + n + ' filter' + (n > 1 ? 's' : '');
+  $('plist').innerHTML = shown.map(function (r) {
+    var icu = r.icu_hours == null ? '—' : (r.icu_hours >= 48 ? (r.icu_hours / 24).toFixed(1) + ' d' : Math.round(r.icu_hours) + ' h');
+    return '<li><button type="button" class="prow" data-id="' + r.id + '" aria-current="' + (curRow && curRow.id === r.id) + '"><span class="prow-top"><span class="pid">' + r.id + '</span><span class="tags">' +
+      (r.imv ? '<i class="tag t-imv" title="Ventilated">Vent</i>' : '') + (r.pressor ? '<i class="tag t-pressor" title="Vasopressors">Press</i>' : '') +
+      (r.positive_culture ? '<i class="tag t-cx" title="' + esc(r.organisms.join(', ').toLowerCase()) + '">Cx+</i>' : '') + (r.n_bal ? '<i class="tag t-bal" title="' + r.n_bal + ' BAL' + (r.bal_positive ? ' · pathogen detected' : '') + '">BAL</i>' : '') + (r.died ? '<i class="tag" title="Died in hospital">†</i>' : '') +
+      '</span></span><span class="prow-sub">' + (r.age == null ? '?' : r.age) + ' ' + (r.sex ? r.sex[0] : '') + ' · ICU ' + icu + (r.n_icu_stays > 1 ? ' (' + r.n_icu_stays + ' stays)' : '') + ' · stay ' + (r.los_days == null ? '—' : r.los_days) + ' d</span></button></li>';
+  }).join('') || '<li class="none">No hospitalizations match these filters.</li>';
+}
+
+/* ---------- patient header ---------- */
+function renderHeader() {
+  var r = curRow, p = cur, d = p.demographics, orgs = r.organisms.map(title);
+  function stat(l, v, s, alert) { return '<div class="stat' + (alert ? ' alert' : '') + '"><span class="stat-v">' + esc(v) + '</span><span class="stat-l">' + esc(l) + '</span>' + (s ? '<span class="stat-s">' + esc(s) + '</span>' : '') + '</div>'; }
+  var icu = r.icu_hours == null ? '—' : (r.icu_hours >= 48 ? (r.icu_hours / 24).toFixed(1) + ' d' : Math.round(r.icu_hours) + ' h');
+  $('phead').innerHTML = '<div class="phead-id"><h1>Hospitalization ' + r.id + '</h1><p>Patient ' + r.patient_id + ' · ' + (d.age == null ? '?' : d.age) + ' y ' + esc(d.sex || '') + ' · admitted ' + esc(fmtClock(p.axis.admission)) + ' UTC' + (d.discharge ? ' · discharged: ' + esc(d.discharge) : '') + '</p></div><div class="stats">' +
+    stat('ICU time', icu, r.n_icu_stays + ' ICU stay' + (r.n_icu_stays === 1 ? '' : 's')) +
+    stat('Cultures', String(r.n_cultures), r.positive_culture ? 'positive: ' + orgs.slice(0, 2).join(', ') + (orgs.length > 2 ? ' +' + (orgs.length - 2) : '') : 'none positive', r.positive_culture) +
+    stat('Antimicrobials', String(r.n_antibiotics), r.n_antibiotics ? 'distinct agents' : 'none given') +
+    stat('Max temp', r.max_temp != null ? r.max_temp + ' °C' : '—', r.fever ? 'above ' + SIRS.temp_high_c : 'within SIRS range', r.fever) +
+    stat('WBC range', r.min_wbc != null ? r.min_wbc + '–' + r.max_wbc : '—', r.wbc_abnormal ? 'outside ' + SIRS.wbc_low + '–' + SIRS.wbc_high : '×10³/µL', r.wbc_abnormal) +
+    stat('Vasopressors', r.pressor ? Math.round(r.pressor_hours || 0) + ' h' : 'none', r.imv ? 'ventilated' : (r.niv || r.hfnc) ? 'NIV / high-flow' : 'no ventilation') + '</div>';
+}
+
+/* ---------- chart ---------- */
+var HEAD = 26, GAP = 12, ROW = 22, RULER_H = 34, SVGNS = 'http://www.w3.org/2000/svg';
+var W = 900, LEFT = 188, RIGHT = 16, PW = 700;
+function X(t) { return LEFT + (t - view[0]) / (view[1] - view[0]) * PW; }
+function T(px) { return view[0] + (px - LEFT) / PW * (view[1] - view[0]); }
+function f1(n) { return Math.round(n * 10) / 10; }
+function tip(titleHtml, rows, accentVar) {
+  var h = '<div class="tt"' + (accentVar ? ' style="border-left-color:var(' + accentVar + ')"' : '') + '>' + titleHtml + '</div>' + rows.filter(function (r) { return r[1] !== '' && r[1] != null; }).map(function (r) { return '<div class="tr"><span>' + esc(r[0]) + '</span><span>' + r[1] + '</span></div>'; }).join('');
+  TIPS.push(h); return TIPS.length - 1;
+}
+function tx(x, y, text, o) { o = o || {}; return '<text x="' + f1(x) + '" y="' + f1(y) + '" font-size="' + (o.size || 11) + '"' + (o.anchor ? ' text-anchor="' + o.anchor + '"' : '') + (o.weight ? ' font-weight="' + o.weight + '"' : '') + ' style="fill:var(' + (o.fill || '--ink2') + ')' + (o.italic ? ';font-style:italic' : '') + '"' + (o.mid ? ' dominant-baseline="middle"' : '') + '>' + esc(text) + '</text>'; }
+function clipStr(s, n) { return s.length > n ? s.slice(0, n - 1) + '…' : s; }
+
+function ticks() {
+  var span = view[1] - view[0], want = Math.max(3, PW / 92), steps = [15, 30, 60, 120, 180, 360, 720, 1440, 2880, 4320, 10080, 20160].map(function (m) { return m * 60000; });
+  var step = steps[steps.length - 1]; for (var i = 0; i < steps.length; i++) { if (span / steps[i] <= want) { step = steps[i]; break; } }
+  var out = []; for (var t = Math.ceil(view[0] / step) * step; t <= view[1]; t += step) out.push(t);
+  return { list: out, dayOnly: step >= 86400000 };
+}
+function yTicks(min, max, n) { var o = []; for (var i = 0; i <= n; i++) o.push(min + (max - min) * i / n); return o; }
+function niceNum(v) { var a = Math.abs(v); return a >= 100 ? Math.round(v) : a >= 10 ? Math.round(v * 10) / 10 : Math.round(v * 100) / 100; }
+
+function thin(pts) {
+  var span = view[1] - view[0], lo = view[0] - span * 0.02, hi = view[1] + span * 0.02, a = 0, b = pts.length - 1;
+  while (a < pts.length && pts[a][0] < lo) a++;
+  while (b >= 0 && pts[b][0] > hi) b--;
+  a = Math.max(a - 1, 0); b = Math.min(b + 1, pts.length - 1);
+  var seg = pts.slice(a, b + 1);
+  if (seg.length <= PW * 1.2) return seg;
+  var bw = span / (PW / 2), out = [], c = null;
+  function flush() {
+    var arr = [c.first, c.min, c.max, c.last].sort(function (u, v) { return u[0] - v[0]; });
+    arr.forEach(function (q, i) { if (i === 0 || q !== arr[i - 1]) out.push(q); });
+  }
+  seg.forEach(function (q) {
+    var k = Math.floor((q[0] - lo) / bw);
+    if (!c || c.k !== k) { if (c) flush(); c = { k: k, first: q, min: q, max: q, last: q }; }
+    else { if (q[1] < c.min[1]) c.min = q; if (q[1] > c.max[1]) c.max = q; c.last = q; }
+  });
+  if (c) flush();
+  return out;
+}
+function sparse(pts) { var n = 0; for (var i = 0; i < pts.length; i++) { var x = X(pts[i][0]); if (x >= LEFT && x <= LEFT + PW) n++; } return n > 70; }
+function Lane(key, titleText, note, body) { return { key: key, title: titleText, note: note || '', body: body, legend: [], rows: null, empty: '', draw: null }; }
+
+
+/* ---------- BAL ---------- */
+var BAL_CAT = { bacterial: ['Bacterial', '--bal-bact'], viral: ['Viral', '--bal-viral'], fungal: ['Fungal', '--bal-fung'], colonization: ['Likely colonization', '--bal-col'] };
+var DIFF = [['neutro', 'Neutrophils', '--dn'], ['macro', 'Macrophages', '--dm'], ['lympho', 'Lymphocytes', '--dl'], ['eos', 'Eosinophils', '--de']];
+function balPathogens(b) {
+  var out = [];
+  b.culture.organisms.forEach(function (o) { if (o.significant) out.push(shortOrg(o.name)); });
+  b.panel.detected.forEach(function (d) { var n = d.kind === 'bacteria' ? shortOrg(d.name) : d.name; if (out.indexOf(n) < 0) out.push(n); });
+  if (b.fungal.pjp_dfa && /^pos/i.test(b.fungal.pjp_dfa)) out.push('PJP');
+  if (b.fungal.galactomannan_index != null && b.fungal.galactomannan_index >= 0.5) out.push('Aspergillus');
+  return out;
+}
+function balLabel(b) { var p = balPathogens(b); return p.length ? p[0] + (p.length > 1 ? ' +' + (p.length - 1) : '') : (b.categories.indexOf('colonization') >= 0 ? 'Yeast (light)' : 'No pathogen'); }
+function balTip(b, i) {
+  var cats = b.categories.length ? b.categories.map(function (c) { return BAL_CAT[c][0]; }).join(' + ') : 'No pathogen detected', pc = b.cells.diff.neutro;
+  return tip('BAL ' + (i + 1) + (b.synthetic ? ' <span style="font-weight:400;color:var(--ink3)">(synthetic)</span>' : ''), [
+    ['Collected', esc(fmtClock(b.t))], ['Day', 'hosp ' + esc(b.day_hosp) + (b.day_intub != null ? ' · intubation ' + esc(b.day_intub) : '')],
+    ['Procedure', esc([b.bal_type, b.side].filter(Boolean).join(' · '))], ['Interpretation', '<b>' + esc(cats) + '</b>'],
+    ['Pathogens', esc(balPathogens(b).join(', '))], ['Cells', b.cells.wbc != null ? esc(Math.round(b.cells.wbc).toLocaleString('en-US')) + ' WBC/µL' + (pc != null ? ' · ' + esc(pc) + '% PMN' : '') : ''],
+    ['BAL galactomannan', b.fungal.galactomannan_index != null || b.fungal.galactomannan ? '<b>' + esc(b.fungal.galactomannan || b.fungal.galactomannan_index) + '</b>' : 'Not tested'], ['BAL amylase', b.amylase != null ? '<b>' + esc(fmtInt(b.amylase)) + '</b> U/L' : 'Not tested'], ['Click', 'jump to full result below']], b.categories.length ? BAL_CAT[b.categories[0]][1] : '--bal-neg');
+}
+function balLaneNeeded() { return META.has_bal; }
+function balMarker(ctx, b, i, row) {
+  var x = X(b.t), y = ctx.rowY(row), id = balTip(b, i), c1 = b.categories.length ? BAL_CAT[b.categories[0]][1] : null, c2 = b.categories.length > 1 ? BAL_CAT[b.categories[1]][1] : null;
+  if (x < LEFT - 10 || x > LEFT + PW + 10) return '';
+  var x0 = x - 8, y0 = y - 8, s = '';
+  if (!c1) s += '<rect data-bal="' + i + '" data-t="' + id + '" x="' + f1(x0 + .8) + '" y="' + f1(y0 + .8) + '" width="14.4" height="14.4" rx="3" style="fill:var(--panel);stroke:var(--bal-neg);stroke-width:1.6;cursor:pointer" />' + tx(x, y + .5, 'B', { anchor: 'middle', size: 10, weight: 700, fill: '--bal-neg', mid: true }).replace('<text', '<text pointer-events="none"');
+  else {
+    s += '<rect data-bal="' + i + '" data-t="' + id + '" x="' + f1(x0) + '" y="' + f1(y0) + '" width="16" height="16" rx="3" style="fill:var(' + c1 + ');stroke:var(--panel);stroke-width:1.5;cursor:pointer' + (b.categories[0] === 'colonization' ? ';fill-opacity:.55' : '') + '" />';
+    if (c2) s += '<path data-bal="' + i + '" data-t="' + id + '" d="M' + f1(x) + ' ' + f1(y0) + 'H' + f1(x0 + 13) + 'a3 3 0 0 1 3 3V' + f1(y0 + 13) + 'a3 3 0 0 1 -3 3H' + f1(x) + 'z" style="fill:var(' + c2 + ');cursor:pointer" />';
+    s += tx(x, y + .5, 'B', { anchor: 'middle', size: 10, weight: 700, fill: '--on-bar', mid: true }).replace('<text', '<text pointer-events="none"');
+  }
+  var lab = balLabel(b), w = lab.length * 6 + 14, nx = (cur.bal[i + 1] ? X(cur.bal[i + 1].t) : Infinity);
+  if (x + 11 >= LEFT && x + 11 + w < W - RIGHT && nx - x > w + 24) s += tx(x + 13, y, lab, { size: 10.5, mid: true }).replace('<text', '<text pointer-events="none"');
+  return s;
+}
+
+function fmtInt(n) { return n == null ? '—' : Math.round(n).toLocaleString('en-US'); }
+function renderBal() {
+  var box = $('balBox');
+  if (!META.has_bal) { box.hidden = true; return; }
+  box.hidden = false;
+  var bal = cur.bal || [], syn = META.bal_synthetic || bal.some(function (b) { return b.synthetic; });
+  var h = '<div class="bal-head"><h2>BAL results</h2><span class="sub">' + (bal.length ? bal.length + ' lavage' + (bal.length > 1 ? 's' : '') + ' during this hospitalization' : 'bronchoalveolar lavage') + '</span>' +
+    (syn ? '<span class="syn" title="The public MIMIC demo has no BAL data. These rows are generated examples that follow your BAL schema.">Synthetic example data</span>' : '') + '</div>';
+  if (!bal.length) h += '<p class="none bal-note" style="font-style:italic">No BAL recorded for this hospitalization.' + (syn ? ' Use the “Has BAL” filter in the cohort list to jump to patients that have one.' : '') + '</p>';
+  bal.forEach(function (b, i) {
+    var cats = b.categories.length ? b.categories.map(function (c) { return '<span class="cat ' + c + '">' + BAL_CAT[c][0] + '</span>'; }).join(' ') : '<span class="cat none">No pathogen detected</span>';
+    h += '<article class="bal" id="bal' + i + '"><div class="bal-top"><span class="bal-title">BAL ' + (i + 1) + '</span><span class="bal-when">' + esc(fmtClock(b.t)) + ' · hospital day ' + esc(b.day_hosp == null ? '?' : b.day_hosp) +
+      (b.day_intub != null ? ' · intubation day ' + esc(b.day_intub) : '') + '</span>' + cats + '<span class="spacer"></span><button type="button" class="linkbtn" data-show="' + i + '">Show on timeline</button></div>' +
+      '<div class="bal-meta">' + esc([b.bal_type || b.procedure, b.side && b.side + ' lung', b.accession && 'accession ' + b.accession].filter(Boolean).join(' · ')) + '</div><div class="bal-grid">';
+
+    // cell count + differential
+    var c = b.cells, dsum = 0;
+    h += '<div class="bal-sec"><h4>Cell count</h4><div class="big">' + fmtInt(c.wbc) + '<small>WBC /µL</small></div><div class="row">RBC <b>' + fmtInt(c.rbc) + '</b> /µL' + (c.abs && c.abs.neutrophils != null ? ' · abs. neutrophils <b>' + fmtInt(c.abs.neutrophils) + '</b>' : '') + '</div>';
+    var d = c.diff || {}, segs = DIFF.map(function (k) { return [k, d[k[0]] || 0]; }), other = Math.max(0, 100 - segs.reduce(function (n, q) { return n + q[1]; }, 0));
+    if (Object.keys(d).length) {
+      h += '<div class="dbar" role="img" aria-label="Differential">' + segs.map(function (q) { return q[1] > 0 ? '<i style="width:' + q[1] + '%;background:var(' + q[0][2] + ')" title="' + q[0][1] + ' ' + q[1] + '%"></i>' : ''; }).join('') + (other > 0 ? '<i style="width:' + other + '%;background:var(--do)" title="Other ' + Math.round(other) + '%"></i>' : '') + '</div>' +
+        '<div class="dleg">' + segs.filter(function (q) { return q[1] > 0; }).map(function (q) { return '<span style="--k:var(' + q[0][2] + ')">' + q[0][1] + ' ' + Math.round(q[1]) + '%</span>'; }).join('') + (other >= 1 ? '<span style="--k:var(--do)">Other ' + Math.round(other) + '%</span>' : '') + '</div>';
+    }
+    h += '<div class="row">Amylase <b>' + (b.amylase != null ? fmtInt(b.amylase) + '</b> U/L' : '</b><span class="nt">Not tested</span>') + '</div></div>';
+
+    // gram stain
+    var g = b.gram;
+    h += '<div class="bal-sec"><h4>Gram stain</h4>' + (g.organisms ? '<div class="row"><b>' + esc(g.organisms) + '</b></div><div class="row">WBC ' + esc(g.wbc || '—') + ' · RBC ' + esc(g.rbc || '—') + '</div>' : '<div class="row"><span class="nt">Not tested</span></div>') + '</div>';
+
+    // culture
+    h += '<div class="bal-sec"><h4>Culture</h4>';
+    if (b.culture.organisms.length) h += b.culture.organisms.map(function (o, oi) {
+      var has = o.susc && o.susc.length, inner = '<span class="dot' + (o.significant ? '' : ' minor') + '"></span><b>' + esc(title(o.name)) + '</b>' + (o.quantity ? ' · ' + esc(o.quantity) : '') + (has ? '<span class="go">antibiogram ›</span>' : '');
+      return '<div class="row">' + (has ? '<button type="button" class="orgbtn" data-sb="' + i + ':' + oi + '">' + inner + '</button>' : inner) + '</div>';
+    }).join('');
+    else h += '<div class="row"><b>' + (b.culture.no_growth ? 'No growth' : 'No organism reported') + '</b></div>';
+    b.fungal.culture.forEach(function (f) { h += '<div class="row">' + (f.name ? 'Fungal culture: <b>' + esc(title(f.name)) + '</b>' + (f.smear ? ' · ' : '') : 'Fungal smear: ') + (f.smear ? esc(f.smear) : '') + '</div>'; });
+    h += '</div>';
+
+    // molecular + special
+    h += '<div class="bal-sec"><h4>Molecular panel &amp; special tests</h4>';
+    if (b.panel.tested) {
+      if (b.panel.detected.length) h += b.panel.detected.map(function (x) { return '<span class="pill hit" style="--k:var(' + (x.kind === 'virus' ? '--bal-viral' : '--bal-bact') + ')">' + esc(x.name) + (x.result && !/^detected$/i.test(x.result) ? '<small>' + esc(x.result.replace(/^detected\s*/i, '').replace(/[()]/g, '')) + '</small>' : '') + '</span>'; }).join('');
+      else h += '<div class="row"><b>None detected</b> <span style="color:var(--ink3)">(' + b.panel.n_tested + ' targets)</span></div>';
+      if (b.panel.genes.length) h += '<div style="margin-top:4px">' + b.panel.genes.map(function (x) { return '<span class="pill hit" style="--k:var(--alert)">' + esc(x.name) + ' <small>resistance gene</small></span>'; }).join('') + '</div>';
+      else if (b.panel.genes_tested) h += '<div class="row">No resistance genes detected <span style="color:var(--ink3)">(' + b.panel.genes_tested + ' tested)</span></div>';
+    } else h += '<div class="row">Molecular panel <span class="nt">Not tested</span></div>';
+    var sp = [], NT = '<span class="nt">Not tested</span>';
+    function pillOf(v, hit, k) { return '<span class="pill' + (hit ? ' hit' : '') + '" style="--k:var(' + k + ')">' + esc(v) + '</span>'; }
+    var gmv = b.fungal.galactomannan || (b.fungal.galactomannan_index != null ? b.fungal.galactomannan_index : null);
+    sp.push('BAL galactomannan ' + (gmv != null ? pillOf(gmv, b.fungal.galactomannan_index >= 0.5 || /^pos/i.test(String(gmv)), '--bal-fung') : NT));
+    sp.push('Pneumocystis DFA ' + (b.fungal.pjp_dfa ? pillOf(b.fungal.pjp_dfa, /^pos/i.test(b.fungal.pjp_dfa), '--bal-fung') : NT));
+    sp.push('MRSA PCR ' + (b.mrsa_pcr ? pillOf(b.mrsa_pcr, /^pos/i.test(b.mrsa_pcr), '--alert') : NT));
+    b.antigens.forEach(function (a) { sp.push(esc(a.name) + ' ' + (a.result ? pillOf(a.result, /^pos|^detected/i.test(a.result), '--bal-bact') : NT)); });
+    h += sp.map(function (t) { return '<div class="row">' + t + '</div>'; }).join('') + '</div></div>';
+    if (b.comments.length) h += '<div class="bal-note">' + b.comments.map(esc).join(' · ') + '</div>';
+    h += '</article>';
+  });
+  box.innerHTML = h;
+}
+
+/* ---------- susceptibility panel ---------- */
+var suscSel = null, SUSC_LABEL = { S: 'Susceptible', NS: 'Non-susceptible', IND: 'Indeterminate', NA: 'NA' };
+function suscHeader(sel) {
+  if (sel.src === 'micro') { var m = cur.micro[sel.i]; return [m.organisms.map(title).join('; ') || 'Culture', (m.fluid ? title(m.fluid) : m.site) + (m.method ? ' · ' + title(m.method) : '') + ' · collected ' + fmtClock(m.t), m.susc]; }
+  var b = cur.bal[sel.b], o = b.culture.organisms[sel.o];
+  return [title(o.name), 'BAL ' + (sel.b + 1) + (o.quantity ? ' · ' + o.quantity : '') + ' · collected ' + fmtClock(b.t), o.susc && o.susc.length ? [{ organism: o.name, results: o.susc }] : []];
+}
+function renderSusc() {
+  var box = $('suscBox');
+  if (!META.has_susceptibility) { box.hidden = true; return; }
+  box.hidden = false;
+  var nAvail = cur.micro.filter(function (m) { return m.susc && m.susc.length; }).length + (cur.bal || []).reduce(function (n, b) { return n + b.culture.organisms.filter(function (o) { return o.susc && o.susc.length; }).length; }, 0);
+  var h = '<div class="bal-head"><h2>Susceptibilities</h2><span class="sub">' + nAvail + ' culture result' + (nAvail === 1 ? '' : 's') + ' with an antibiogram' + (nAvail > 1 ? ' · click another culture dot or BAL organism to switch' : '') + '</span>' +
+    (META.susc_synthetic ? '<span class="syn" title="The public MIMIC demo has no susceptibility table. These antibiograms are generated examples.">Synthetic example data</span>' : '') + '</div>';
+  if (!suscSel) h += '<p class="bal-note" style="font-style:italic">' + (nAvail ? '' : 'No antibiograms for this hospitalization. ') + 'Click a positive culture dot in the Microbiology lane' + ((cur.bal || []).length ? ', or an organism in a BAL result above,' : '') + ' to see its antibiogram here.</p>';
+  else {
+    var hd = suscHeader(suscSel);
+    h += '<div class="bal-meta" style="margin-top:8px"><b style="color:var(--ink)">' + esc(hd[0]) + '</b> · ' + esc(hd[1]) + '</div>';
+    if (!hd[2] || !hd[2].length) h += '<p class="bal-note" style="font-style:italic">No susceptibility results reported for this organism.</p>';
+    else h += '<div class="susc-grid">' + hd[2].map(function (it) {
+      var n = { S: 0, NS: 0, IND: 0, NA: 0 }, ns = [];
+      it.results.forEach(function (r) { n[r.s] = (n[r.s] || 0) + 1; if (r.s === 'NS') ns.push(r.a + (r.raw ? ' (' + r.raw + ')' : '')); });
+      return '<div class="susc-org"><h3>' + esc(title(it.organism)) + '</h3><div class="susc-sum"><span><b style="color:var(--sus-s)">' + n.S + '</b> susceptible</span><span><b style="color:var(--sus-r)">' + n.NS + '</b> non-susceptible</span>' +
+        (n.IND ? '<span><b style="color:var(--sus-i)">' + n.IND + '</b> indeterminate</span>' : '') + (n.NA ? '<span><b style="color:var(--ink3)">' + n.NA + '</b> NA</span>' : '') + '</div>' +
+        (ns.length ? '<div class="susc-res">Non-susceptible: ' + esc(ns.join(', ')) + '</div>' : '') +
+        '<table class="stbl"><thead><tr><th title="antimicrobial_name / antimicrobial_category">Antimicrobial</th><th title="susceptibility_category">Category</th><th title="susceptibility_name (raw interpretation)">Reported</th><th title="sensitivity_name (raw value, e.g. MIC)">Value</th></tr></thead><tbody>' + it.results.map(function (r) {
+          var lab = SUSC_LABEL[r.s] || SUSC_LABEL.NA;
+          return '<tr><td>' + esc(r.a) + (r.c ? '<div class="ccat">' + esc(r.c) + '</div>' : '') + '</td><td><span class="sc ' + r.s + '">' + lab + '</span></td><td>' + esc(r.raw || '—') + '</td><td class="mic">' + esc(r.val || '—') + '</td></tr>';
+        }).join('') + '</tbody></table></div>';
+    }).join('') + '</div>';
+  }
+  box.innerHTML = h;
+}
+function showSusc(sel, scroll) {
+  suscSel = sel; renderSusc();
+  if (scroll) { var el = $('suscBox'); el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+}
+
+function focusBal(i) {
+  var el = $('bal' + i); if (!el) return;
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+}
+
+function buildLanes(p) {
+  var lanes = [], k;
+
+  // 1. ICU stays + location
+  var L1 = Lane('loc', 'ICU stays & location', 'ICU arrival and departure', 2 * ROW + 6); L1.rows = ['ICU stays', 'Hospital location'];
+  L1.draw = function (ctx) {
+    var s = '';
+    p.icu_stays.forEach(function (st, i) {
+      var id = tip('ICU stay ' + (i + 1), [['Arrived', esc(fmtClock(st.start))], ['Left', esc(fmtClock(st.end))], ['Duration', esc(fmtDur(st.end - st.start))], ['Unit', esc(st.types.map(function (t) { return title(t.replace(/_/g, ' ')); }).join(' → ') || 'ICU')]], '--c-icu');
+      s += ctx.bar(0, st.start, st.end, '--c-icu', 'ICU stay ' + (i + 1) + ' · ' + fmtDur(st.end - st.start), id, 0.74);
+    });
+    p.adt.forEach(function (a) {
+      var nm = title(a.name || a.category), id = tip(esc(nm), [['Category', esc(a.category)], ['In', esc(fmtClock(a.start))], ['Out', esc(fmtClock(a.end))], ['Duration', esc(fmtDur(a.end - a.start))]], LOC_VAR[a.category] || '--c-otherloc');
+      s += ctx.bar(1, a.start, a.end, LOC_VAR[a.category] || '--c-otherloc', a.category === 'icu' ? '' : nm, id, 0.74, a.category === 'ward' || a.category === 'ed' || !LOC_VAR[a.category]);
+    });
+    return s;
+  };
+  lanes.push(L1);
+
+  // 2. respiratory support
+  var devs = []; p.resp.bands.forEach(function (b) { if (devs.indexOf(b.device) < 0) devs.push(b.device); });
+  devs.sort(function (a, b) { return (DEV_RANK[b] || 0) - (DEV_RANK[a] || 0); });
+  var L2 = Lane('resp', 'Respiratory support', 'one block per device', ROW + 10);
+  if (!devs.length) { L2.empty = 'No respiratory support recorded'; L2.body = 44; }
+  else {
+    L2.rows = ['Support device'];
+    L2.devKey = ['IMV', 'NIPPV', 'CPAP', 'High Flow NC', 'Face Mask', 'Nasal Cannula', 'Other'].map(function (d) { return [DEV_LABEL[d], DEV_VAR[d], 'swatch', DEV_SHORT[d] || d]; });
+    L2.draw = function (ctx) {
+      return p.resp.bands.map(function (bd) {
+        var v = DEV_VAR[bd.device] || '--d-other', id = tip(esc(DEV_LABEL[bd.device] || bd.device), [['From', esc(fmtClock(bd.start))], ['To', esc(fmtClock(bd.end))], ['Duration', esc(fmtDur(bd.end - bd.start))]], v);
+        return ctx.bar(0, bd.start, bd.end, v, DEV_SHORT[bd.device] || bd.device, id, 0.86, false, 0, v === '--d-fm' ? '--on-amber' : null);
+      }).join('');
+    };
+  }
+  lanes.push(L2);
+
+  // 3/4. FiO2, PEEP
+  function lineLane(key, name, unit, pts, colorVar, min, max, ticksN, digits, emptyMsg) {
+    var L = Lane(key, name, unit, 62);
+    if (!pts.length) { L.empty = emptyMsg; L.body = 44; return L; }
+    var lo = min, hi = max == null ? Math.max.apply(null, pts.map(function (q) { return q[1]; })) + 2 : max;
+    var all = pts;
+    L.draw = function (ctx) {
+      var pts = thin(all);
+      var y = function (v) { return ctx.top + ctx.body - (v - lo) / (hi - lo) * ctx.body; };
+      var s = ctx.yAxis(lo, hi, ticksN, y, digits);
+      s += '<path d="' + pts.map(function (q, i) { return (i ? 'L' : 'M') + f1(X(q[0])) + ' ' + f1(y(q[1])); }).join('') + '" style="fill:none;stroke:var(' + colorVar + ');stroke-width:1.6" />';
+      var hide = sparse(pts);
+      pts.forEach(function (q) { var id = tip(esc(name), [[unit, '<b>' + fmtNum(q[1], digits) + '</b>'], ['Time', esc(fmtClock(q[0]))]], colorVar); s += ctx.dot(X(q[0]), y(q[1]), 2.8, colorVar, id, '', hide); });
+      return s;
+    };
+    return L;
+  }
+  lanes.push(lineLane('fio2', 'FiO₂', '%', p.resp.fio2, '--c-fio2', 20, 100, 2, 0, 'No FiO₂ recorded'));
+  lanes.push(lineLane('peep', 'PEEP', 'cmH₂O', p.resp.peep, '--c-peep', 0, null, 2, 0, 'No PEEP recorded'));
+
+  // 5. vasopressors
+  var present = PR_ORDER.filter(function (a) { return p.pressors.agents[a]; });
+  var L5 = Lane('press', 'Vasopressors', 'norepinephrine-equivalent, mcg/kg/min', 96);
+  if (!present.length) { L5.empty = 'No vasopressor infusions recorded'; L5.body = 44; }
+  else {
+    var maxNee = Math.max(0.1, Math.max.apply(null, p.pressors.nee.map(function (q) { return q[1]; }))) * 1.1;
+    present.forEach(function (a) { L5.legend.push([PR_LABEL[a], PR_VAR[a], 'line']); }); L5.legend.push(['Total', '--p-total', 'line']);
+    L5.draw = function (ctx) {
+      var y = function (v) { return ctx.top + ctx.body - v / maxNee * ctx.body; };
+      var s = ctx.yAxis(0, maxNee, 2, y, 2);
+      function step(raw) {
+        var pts = thin(raw), d = '', py = null;
+        pts.forEach(function (q, i) { var x = f1(X(q[0])), yy = f1(y(q[1])); d += i === 0 ? 'M' + x + ' ' + yy : 'H' + x + 'V' + yy; py = yy; });
+        if (pts.length) { d += 'H' + f1(X(Math.min(view[1], p.axis.end))); }
+        return d;
+      }
+      present.forEach(function (a) { s += '<path d="' + step(p.pressors.agents[a].nee) + '" style="fill:none;stroke:var(' + PR_VAR[a] + ');stroke-width:1.7" />'; });
+      var tot = thin(p.pressors.nee), d = step(p.pressors.nee);
+      s += '<path d="' + d + 'V' + f1(ctx.top + ctx.body) + 'H' + f1(X(tot[0][0])) + 'Z" style="fill:var(--p-total);fill-opacity:.07;stroke:none" />';
+      s += '<path d="' + d + '" style="fill:none;stroke:var(--p-total);stroke-width:2.2" />';
+      var hideT = sparse(tot);
+      tot.forEach(function (q) {
+        var rows = [['NE-equivalent', '<b>' + fmtNum(q[1], 3) + '</b> mcg/kg/min']];
+        present.forEach(function (a) { var ag = p.pressors.agents[a], v = 0; for (var i = 0; i < ag.dose.length && ag.dose[i][0] <= q[0]; i++) v = ag.dose[i][1]; if (v > 0) rows.push([PR_LABEL[a], fmtNum(v, 3) + ' ' + esc(ag.unit)]); });
+        rows.push(['Time', esc(fmtClock(q[0]))]);
+        s += ctx.dot(X(q[0]), y(q[1]), 2.6, '--p-total', tip('Vasopressor support', rows, '--p-total'), '', hideT);
+      });
+      return s;
+    };
+  }
+  lanes.push(L5);
+
+  // 6. microbiology
+  var sites = SITES.filter(function (s) { return p.micro.some(function (m) { return m.site === s; }); });
+  var hasBal = META.has_bal && p.bal && p.bal.length, rowsAll = sites.concat(hasBal ? ['BAL'] : []);
+  var L6 = Lane('micro', 'Microbiology', 'marker at collection; line runs to result' + (hasBal ? '; BAL tiles open the full result' : ''), Math.max(rowsAll.length, 1) * ROW + 6);
+  if (!p.micro.length && !hasBal) { L6.empty = 'No cultures recorded'; L6.body = 44; }
+  else {
+    L6.rows = rowsAll; L6.legend = [['Organism isolated', '--c-pos', 'dot'], ['No organism reported', '--c-neg', 'ring']].concat(hasBal ? [['BAL (colour = finding)', '--bal-viral', 'swatch']] : []);
+    L6.draw = function (ctx) {
+      var s = '', nextX = new Map(), bySite = {};
+      p.micro.forEach(function (m) { (bySite[m.site] = bySite[m.site] || []).push(m); });
+      Object.keys(bySite).forEach(function (k) { var a = bySite[k]; a.forEach(function (m, i) { nextX.set(m, i + 1 < a.length ? X(a[i + 1].t) : Infinity); }); });
+      p.micro.forEach(function (m) { if (m.result_t && m.result_t > m.t) { var yy = ctx.rowY(sites.indexOf(m.site)); s += '<rect x="' + f1(X(m.t)) + '" y="' + f1(yy - 1) + '" width="' + f1(Math.max(X(m.result_t) - X(m.t), 1)) + '" height="2" style="fill:var(--grid2)" />'; } });
+      p.micro.forEach(function (m) {
+        var yy = ctx.rowY(sites.indexOf(m.site)), x = X(m.t);
+        var id = tip(esc(m.fluid ? title(m.fluid) : m.site), [['Test', esc(m.method ? title(m.method) : '')], ['Collected', esc(fmtClock(m.t))],
+          ['Resulted', m.result_t ? esc(fmtClock(m.result_t)) + ' (' + esc(fmtDur(m.result_t - m.t)) + ')' : 'not reported'],
+          ['Result', m.positive ? '<b style="color:var(--c-pos)">' + esc(m.organisms.map(title).join('; ')) + '</b>' : m.cancelled ? 'Cancelled' : 'No organism reported'], ['Antibiogram', m.susc && m.susc.length ? 'click dot to view' : '']], m.positive ? '--c-pos' : '--c-neg');
+        if (m.positive) {
+          var dotS = ctx.dot(x, yy, 6, '--c-pos', id, 'stroke:var(--panel);stroke-width:2;' + (m.susc && m.susc.length ? 'cursor:pointer' : ''));
+          if (m.susc && m.susc.length) dotS = dotS.split('<circle data-t=').join('<circle data-mi="' + p.micro.indexOf(m) + '" data-t=');
+          s += dotS;
+          var lab = shortOrg(m.organisms[0]) + (m.organisms.length > 1 ? ' +' + (m.organisms.length - 1) : ''), w = lab.length * 6 + 14;
+          if (x + 9 >= LEFT && x + 9 + w < W - RIGHT && nextX.get(m) - x > w + 12) s += tx(x + 10, yy, lab, { size: 10.5, mid: true });
+        } else s += ctx.dot(x, yy, 4.4, '--panel', id, 'stroke:var(--c-neg);stroke-width:1.6');
+      });
+      if (hasBal) s += p.bal.map(function (b, i) { return balMarker(ctx, b, i, sites.length); }).join('');
+      return s;
+    };
+  }
+  lanes.push(L6);
+
+  // 7. antimicrobials
+  var agents = Object.keys(p.abx).filter(function (a) { return p.abx[a].doses.length; }).sort(function (a, b) { return p.abx[a].doses[0][0] - p.abx[b].doses[0][0]; });
+  var L7 = Lane('abx', 'Antimicrobials', 'diamond = dose given; band = course (doses ≤ 36 h apart)', Math.max(agents.length, 1) * ROW + 6);
+  if (!agents.length) { L7.empty = 'No antimicrobial doses recorded'; L7.body = 44; }
+  else {
+    L7.rows = agents.map(abxName);
+    var classes = []; agents.forEach(function (a) { if (classes.indexOf(p.abx[a].class) < 0) classes.push(p.abx[a].class); });
+    L7.legend = classes.map(function (c) { return [ABX_NAME[c] || c, ABX_VAR[c] || '--a-bact', 'diamond']; });
+    L7.draw = function (ctx) {
+      var s = '', dots = '';
+      agents.forEach(function (a, row) {
+        var ag = p.abx[a], cv = ABX_VAR[ag.class] || '--a-bact', ds = ag.doses.slice().sort(function (u, v) { return u[0] - v[0]; });
+        var start = ds[0][0], last = start, n = 1;
+        function flush() { if (n > 1) { var id = tip(esc(abxName(a)) + ' course', [['First dose', esc(fmtClock(start))], ['Last dose', esc(fmtClock(last))], ['Doses', String(n)], ['Span', esc(fmtDur(last - start))]], cv); s += ctx.bar(row, start, last, cv, '', id, 0.46, false, 0.28); } }
+        ds.forEach(function (d, i) {
+          if (i > 0) { if (d[0] - last > COURSE_GAP) { flush(); start = d[0]; n = 1; } else n++; last = d[0]; }
+          var id = tip(esc(abxName(a)), [['Dose', d[1] != null ? '<b>' + fmtNum(d[1]) + '</b> ' + esc(d[2] || '') : 'not recorded'], ['Route', esc((d[3] || '').toUpperCase())], ['Given', esc(fmtClock(d[0]))]], cv);
+          dots += ctx.diamond(X(d[0]), ctx.rowY(row), 5, cv, id);
+        });
+        flush();
+      });
+      return s + dots;
+    };
+  }
+  lanes.push(L7);
+
+  // 8/9. temperature, WBC
+  function thresholdLane(key, name, unit, pts, colorVar, hi, lo, floor, ceil, digits) {
+    var L = Lane(key, name, unit + ' · shaded = outside SIRS range (' + lo + '–' + hi + ')', 84);
+    if (!pts.length) { L.empty = 'No ' + name.toLowerCase() + ' values recorded'; L.body = 44; return L; }
+    var vals = pts.map(function (q) { return q[1]; });
+    var mn = Math.min(floor, Math.floor(Math.min.apply(null, vals)) - 0.5), mx = Math.max(ceil, Math.ceil(Math.max.apply(null, vals)) + 0.5);
+    if (key === 'temp') { mn = Math.max(mn, 34); mx = Math.min(mx, 41.5); } else { mx = Math.min(mx, 50); }
+    var allP = pts;
+    L.draw = function (ctx) {
+      var pts = thin(allP);
+      var y = function (v) { return ctx.top + ctx.body - (v - mn) / (mx - mn) * ctx.body; };
+      var s = '<rect x="' + LEFT + '" y="' + f1(y(mx)) + '" width="' + PW + '" height="' + f1(y(hi) - y(mx)) + '" style="fill:var(--band-hot)" />' +
+        '<rect x="' + LEFT + '" y="' + f1(y(lo)) + '" width="' + PW + '" height="' + f1(y(mn) - y(lo)) + '" style="fill:var(--band-cold)" />';
+      s += ctx.yAxis(mn, mx, 3, y, digits);
+      [hi, lo].forEach(function (v) { s += '<line x1="' + LEFT + '" x2="' + (LEFT + PW) + '" y1="' + f1(y(v)) + '" y2="' + f1(y(v)) + '" style="stroke:var(--grid2);stroke-dasharray:4 3" />' + tx(LEFT + PW - 4, y(v) - 3, String(v), { size: 10, anchor: 'end', fill: '--ink3' }); });
+      s += '<path d="' + pts.map(function (q, i) { return (i ? 'L' : 'M') + f1(X(q[0])) + ' ' + f1(y(q[1])); }).join('') + '" style="fill:none;stroke:var(' + colorVar + ');stroke-width:1.6" />';
+      var hideP = sparse(pts);
+      pts.forEach(function (q) {
+        var out = q[1] > hi ? '--c-hot' : q[1] < lo ? '--c-cold' : colorVar;
+        var st = q[1] > hi ? ' <span style="color:var(--c-hot)">above ' + hi + '</span>' : q[1] < lo ? ' <span style="color:var(--c-cold)">below ' + lo + '</span>' : '';
+        s += ctx.dot(X(q[0]), y(q[1]), out === colorVar ? 2.8 : 3.8, out, tip(esc(name), [[unit, '<b>' + fmtNum(q[1], digits) + '</b>' + st], ['Time', esc(fmtClock(q[0]))]], colorVar), '', hideP && out === colorVar);
+      });
+      return s;
+    };
+    return L;
+  }
+  lanes.push(thresholdLane('temp', 'Temperature', '°C', p.temp, '--c-temp', SIRS.temp_high_c, SIRS.temp_low_c, 35, 39, 1));
+  lanes.push(thresholdLane('wbc', 'WBC', '×10³/µL', (p.labs.wbc && p.labs.wbc.values) || [], '--c-wbc', SIRS.wbc_high, SIRS.wbc_low, 0, 16, 1));
+
+  // 10. other labs
+  var lab = p.labs[labKey], lname = LAB_LABEL[labKey] || title(labKey.replace(/_/g, ' '));
+  var L10 = Lane('lab', 'Other labs: ' + lname, lab && lab.unit ? lab.unit : '', 70);
+  if (!lab || !lab.values.length) { L10.empty = 'No ' + lname + ' results for this hospitalization'; L10.body = 44; }
+  else {
+    var vs = lab.values.map(function (q) { return q[1]; }), a0 = Math.min.apply(null, vs), a1 = Math.max.apply(null, vs), pad = (a1 - a0) * 0.12 || Math.max(Math.abs(a1) * 0.1, 0.5), lo2 = a0 - pad, hi2 = a1 + pad;
+    var allLab = lab.values;
+    L10.draw = function (ctx) {
+      var vals = thin(allLab);
+      var y = function (v) { return ctx.top + ctx.body - (v - lo2) / (hi2 - lo2) * ctx.body; };
+      var s = ctx.yAxis(lo2, hi2, 2, y, 1);
+      s += '<path d="' + vals.map(function (q, i) { return (i ? 'L' : 'M') + f1(X(q[0])) + ' ' + f1(y(q[1])); }).join('') + '" style="fill:none;stroke:var(--c-lab);stroke-width:1.5" />';
+      var hideL = sparse(vals);
+      vals.forEach(function (q) { s += ctx.dot(X(q[0]), y(q[1]), 3, '--c-lab', tip(esc(lname), [[lab.unit || 'Value', '<b>' + fmtNum(q[1], 2) + '</b>'], ['Time', esc(fmtClock(q[0]))]], '--c-lab'), '', hideL); });
+      return s;
+    };
+  }
+  lanes.push(L10);
+  var ORDER = ['loc', 'temp', 'wbc', 'press', 'micro', 'abx', 'bal', 'resp', 'fio2', 'peep'];
+  lanes.sort(function (a, b) { var ia = ORDER.indexOf(a.key), ib = ORDER.indexOf(b.key); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib); });
+  return lanes;
+}
+
+function legendSvg(items, rightX, y) {
+  var s = '', x = rightX;
+  for (var i = items.length - 1; i >= 0; i--) {
+    var it = items[i], w = it[0].length * 6.1;
+    x -= w; s += tx(x, y + 3.5, it[0], { size: 11 });
+    x -= 12;
+    var c = 'var(' + it[1] + ')';
+    if (it[2] === 'swatch') s += '<rect x="' + f1(x - 1) + '" y="' + (y - 5) + '" width="10" height="10" rx="2" style="fill:' + c + '" />';
+    else if (it[2] === 'line') s += '<rect x="' + f1(x - 2) + '" y="' + (y - 1.5) + '" width="12" height="3" rx="1.5" style="fill:' + c + '" />';
+    else if (it[2] === 'diamond') s += '<path d="M' + f1(x + 4) + ' ' + (y - 5) + 'l5 5-5 5-5-5z" style="fill:' + c + '" />';
+    else if (it[2] === 'ring') s += '<circle cx="' + f1(x + 4) + '" cy="' + y + '" r="4" style="fill:var(--panel);stroke:' + c + ';stroke-width:1.6" />';
+    else s += '<circle cx="' + f1(x + 4) + '" cy="' + y + '" r="5" style="fill:' + c + '" />';
+    x -= 16;
+  }
+  return s;
+}
+
+function drawOverview() {
+  var A = cur.axis.start, span = cur.axis.end - A;
+  function ox(t) { return LEFT + (t - A) / span * PW; }
+  var s = '<svg id="ovw" width="' + W + '" height="30" viewBox="0 0 ' + W + ' 30" role="presentation">';
+  s += tx(12, 19, 'Whole stay · ' + fmtDur(span), { size: 11, fill: '--ink3' });
+  s += '<rect x="' + LEFT + '" y="3" width="' + PW + '" height="24" rx="3" style="fill:var(--bg)" />';
+  cur.icu_stays.forEach(function (st) { s += '<rect x="' + f1(ox(st.start)) + '" y="6" width="' + f1(Math.max(ox(st.end) - ox(st.start), 1.5)) + '" height="8" rx="2" style="fill:var(--c-icu);fill-opacity:.85" />'; });
+  cur.resp.bands.forEach(function (b) { s += '<rect x="' + f1(ox(b.start)) + '" y="17" width="' + f1(Math.max(ox(b.end) - ox(b.start), 1.5)) + '" height="6" rx="1.5" style="fill:var(' + (DEV_VAR[b.device] || '--d-other') + ')" />'; });
+  cur.micro.forEach(function (m) { if (m.positive) s += '<rect x="' + f1(ox(m.t) - 1) + '" y="3" width="2" height="24" style="fill:var(--c-pos)" />'; });
+  var x0 = ox(view[0]), x1 = Math.max(ox(view[1]), x0 + 6);
+  s += '<rect x="' + f1(x0) + '" y="2" width="' + f1(x1 - x0) + '" height="26" rx="3" style="fill:var(--accent);fill-opacity:.14;stroke:var(--accent);stroke-width:1.5" />';
+  s += '<rect x="' + f1(x0 - 2) + '" y="8" width="4" height="14" rx="2" style="fill:var(--accent);cursor:ew-resize" /><rect x="' + f1(x1 - 2) + '" y="8" width="4" height="14" rx="2" style="fill:var(--accent);cursor:ew-resize" />';
+  return s + '</svg>';
+}
+function drawChart() {
+  if (!cur) return;
+  var card = $('card'); W = Math.max(card.clientWidth, 320); LEFT = W < 700 ? 96 : 188; PW = W - LEFT - RIGHT;
+  $('plot').style.width = W + 'px';
+  TIPS = [];
+  var p = cur, lanes = buildLanes(p), tk = ticks();
+  var maxChars = Math.floor((LEFT - 18) / 6.2);
+
+  // ruler
+  var r = '<svg width="' + W + '" height="' + RULER_H + '" viewBox="0 0 ' + W + ' ' + RULER_H + '" id="ruler">';
+  tk.list.forEach(function (t) { var x = X(t); r += '<line x1="' + f1(x) + '" x2="' + f1(x) + '" y1="22" y2="' + RULER_H + '" style="stroke:var(--grid2)" />' + tx(x, 16, fmtTick(t, tk.dayOnly), { anchor: 'middle', size: 11, fill: '--ink2', weight: (fmtTick(t).indexOf(':') < 0 || tk.dayOnly) ? 600 : 400 }); });
+  r += '</svg>';
+  $('ovw').outerHTML = drawOverview(); $('ruler').outerHTML = r;
+
+  var y = 8, s = '', defs = '<defs><clipPath id="clipP"><rect x="' + LEFT + '" y="0" width="' + PW + '" height="99999"/></clipPath></defs>';
+  lanes.forEach(function (L) {
+    var top = y + HEAD, body = L.body, ctx = {};
+    s += tx(12, y + 16, L.title, { size: 13, weight: 600, fill: '--ink' });
+    if (L.note && W > 780) s += tx(12 + Math.max(L.title.length * 7.8, 44) + 10, y + 16, L.note, { size: 11, fill: '--ink3' });
+    if (L.legend.length) {
+      var lw = L.legend.reduce(function (n, it) { return n + it[0].length * 6.1 + 28; }, 0), room = W - RIGHT - 4 - (12 + Math.max(L.title.length * 7.8, 44) + 14);
+      if (lw <= room) s += legendSvg(L.legend, W - RIGHT - 4, y + 13);
+    }
+    s += '<rect x="' + LEFT + '" y="' + top + '" width="' + PW + '" height="' + body + '" style="fill:var(--panel);stroke:var(--line)" />';
+    tk.list.forEach(function (t) { var x = X(t); s += '<line x1="' + f1(x) + '" x2="' + f1(x) + '" y1="' + top + '" y2="' + (top + body) + '" style="stroke:var(--grid)" />'; });
+    p.icu_stays.forEach(function (st) { var x0 = Math.max(X(st.start), LEFT), x1 = Math.min(X(st.end), LEFT + PW); if (x1 > x0) s += '<rect x="' + f1(x0) + '" y="' + top + '" width="' + f1(x1 - x0) + '" height="' + body + '" style="fill:var(--icu-tint)" />'; });
+    if (L.rows) {
+      L.rows.forEach(function (lab, i) { var ry = top + 3 + i * ROW + ROW / 2; s += '<line x1="' + LEFT + '" x2="' + (LEFT + PW) + '" y1="' + f1(top + 3 + (i + 1) * ROW) + '" y2="' + f1(top + 3 + (i + 1) * ROW) + '" style="stroke:var(--grid)" />' + tx(LEFT - 8, ry, clipStr(lab, maxChars), { anchor: 'end', size: 11, mid: true }); });
+    }
+    ctx.top = top; ctx.body = body;
+    ctx.rowY = function (i) { return top + 3 + i * ROW + ROW / 2; };
+    ctx.bar = function (row, a, b, cvar, label, id, ratio, muted, op, lblVar) {
+      var x0 = X(a), x1 = X(b), w = Math.max(x1 - x0, 2); if (x0 > LEFT + PW || x0 + w < LEFT) return '';
+      var h = ROW * ratio, yy = ctx.rowY(row) - h / 2, o = '<rect data-t="' + id + '" x="' + f1(x0) + '" y="' + f1(yy) + '" width="' + f1(w) + '" height="' + f1(h) + '" rx="3" style="fill:var(' + cvar + ');' + (op ? 'fill-opacity:' + op : '') + '" />';
+      if (label && w > label.length * 6.2 + 12) { var lx = Math.max(x0, LEFT) + 6; if (lx + label.length * 6.2 < x0 + w) o += tx(lx, ctx.rowY(row), label, { size: 11, mid: true, fill: lblVar || (muted ? '--ink2' : '--on-bar'), weight: 500 }).replace('<text', '<text pointer-events="none"'); }
+      return o;
+    };
+    ctx.dot = function (x, yv, rad, cvar, id, extra, hidden) {
+      if (x < LEFT - 8 || x > LEFT + PW + 8) return '';
+      return (hidden ? '' : '<circle data-t="' + id + '" cx="' + f1(x) + '" cy="' + f1(yv) + '" r="' + rad + '" style="fill:var(' + cvar + ');' + (extra || '') + '" />') + '<circle data-t="' + id + '" cx="' + f1(x) + '" cy="' + f1(yv) + '" r="' + Math.max(rad + 3, 7) + '" style="fill:var(--panel);fill-opacity:0" />';
+    };
+    ctx.diamond = function (x, yv, rad, cvar, id) {
+      if (x < LEFT - 8 || x > LEFT + PW + 8) return '';
+      return '<path data-t="' + id + '" d="M' + f1(x) + ' ' + f1(yv - rad) + 'l' + rad + ' ' + rad + ' -' + rad + ' ' + rad + ' -' + rad + ' -' + rad + 'z" style="fill:var(' + cvar + ');stroke:var(--panel);stroke-width:1" />';
+    };
+    ctx.labels = '';
+    ctx.yAxis = function (lo, hi, n, yf, digits) {
+      return yTicks(lo, hi, n).map(function (v) { var yy = yf(v); ctx.labels += tx(LEFT - 8, yy, fmtNum(niceNum(v), digits), { anchor: 'end', size: 10.5, fill: '--ink3', mid: true }); return '<line x1="' + LEFT + '" x2="' + (LEFT + PW) + '" y1="' + f1(yy) + '" y2="' + f1(yy) + '" style="stroke:var(--grid)" />'; }).join('');
+    };
+    if (L.empty) s += tx(LEFT + 14, top + body / 2, L.empty, { size: 12, fill: '--ink3', italic: true, mid: true });
+    else { var g = L.draw(ctx); s += '<g clip-path="url(#clipP)">' + g + '</g>' + ctx.labels; }
+    y = top + body + GAP;
+    if (L.devKey) {
+      var kx = LEFT, ky = top + body + 15;
+      L.devKey.forEach(function (it) {
+        var wlab = it[0].length * 6.1;
+        if (kx + 16 + wlab > W - RIGHT) { kx = LEFT; ky += 16; }
+        s += '<rect x="' + f1(kx) + '" y="' + (ky - 5) + '" width="10" height="10" rx="2" style="fill:var(' + it[1] + ')" />' + tx(kx + 15, ky + 3.5, it[0], { size: 11 });
+        kx += 15 + wlab + 16;
+      });
+      y = ky + 10 + GAP / 2;
+    }
+  });
+  var H2 = y + 4;
+  $('lanes').innerHTML = '<svg id="lanesSvg" width="' + W + '" height="' + H2 + '" viewBox="0 0 ' + W + ' ' + H2 + '" role="img" aria-label="Timeline for hospitalization ' + p.id + '">' + defs + s + '</svg>';
+  $('xline').style.display = 'none';
+}
+
+/* ---------- view control ---------- */
+var raf = 0;
+function schedule() { if (!raf) raf = requestAnimationFrame(function () { raf = 0; drawChart(); }); }
+function setView(a, b) {
+  var A = cur.axis.start, B = cur.axis.end, minSpan = 30 * 60000, span = Math.max(b - a, minSpan);
+  if (span >= B - A) { a = A; b = B; } else { if (a < A) { a = A; b = A + span; } if (b > B) { b = B; a = B - span; } }
+  view = [a, b]; schedule();
+}
+function zoom(f, centre) { var c = centre == null ? (view[0] + view[1]) / 2 : centre, a = c - (c - view[0]) * f, b = c + (view[1] - c) * f; setView(a, b); }
+function icuWindow() {
+  var s = cur.icu_stays; if (!s.length) return [cur.axis.start, cur.axis.end];
+  var a = Math.min.apply(null, s.map(function (x) { return x.start; })), b = Math.max.apply(null, s.map(function (x) { return x.end; })), pad = Math.max((b - a) * 0.03, H);
+  return [Math.max(cur.axis.start, a - pad), Math.min(cur.axis.end, b + pad)];
+}
+
+function select(id) {
+  curRow = ROWS.filter(function (r) { return r.id === id; })[0]; cur = P[id];
+  if (!cur) return;
+  var longStay = cur.axis.end - cur.axis.start > 21 * 86400000 && cur.icu_stays.length;
+  if (longStay) { var w = icuWindow(); view = [w[0], w[1]]; } else view = [cur.axis.start, cur.axis.end];
+  $('hint').textContent = longStay ? 'Opened on the ICU stays of a ' + fmtDur(cur.axis.end - cur.axis.start) + ' hospitalization. Use Full stay or the overview strip to move.' : 'Ctrl + scroll to zoom · drag to pan · hover for details';
+  suscSel = null;   // open on the first culture (micro or BAL) that has an antibiogram
+  var firstM = -1; cur.micro.some(function (m, i) { if (m.susc && m.susc.length) { firstM = i; return true; } return false; });
+  var firstB = null; (cur.bal || []).some(function (b, bi) { return b.culture.organisms.some(function (o, oi) { if (o.susc && o.susc.length) { firstB = { src: 'bal', b: bi, o: oi, t: b.t }; return true; } return false; }); });
+  if (firstM >= 0 && (!firstB || cur.micro[firstM].t <= firstB.t)) suscSel = { src: 'micro', i: firstM }; else if (firstB) suscSel = firstB;
+  renderHeader(); renderList(); drawChart(); renderBal(); renderSusc();
+  var kids = $('selLab').options; // flag labs without data for this patient
+  Array.prototype.forEach.call(kids, function (o) { o.textContent = (LAB_LABEL[o.value] || o.value) + (cur.labs[o.value] ? '' : ' (none)'); });
+}
+
+function wire() {
+  $('vFull').onclick = function () { setView(cur.axis.start, cur.axis.end); };
+  $('vIcu').onclick = function () { var w = icuWindow(); setView(w[0], w[1]); };
+  $('vFirst').onclick = function () { setView(cur.axis.start, cur.axis.start + 48 * H); };
+  $('zIn').onclick = function () { zoom(0.5); }; $('zOut').onclick = function () { zoom(2); };
+  $('selLab').addEventListener('change', function (e) { labKey = e.target.value; drawChart(); });
+  $('selLab').innerHTML = META.extra_labs.map(function (k) { return '<option value="' + k + '">' + (LAB_LABEL[k] || k) + '</option>'; }).join('');
+  $('selLab').value = labKey;
+
+  var plot = $('plot'), tipEl = $('tip'), xline = $('xline'), badge = $('xbadge');
+  plot.addEventListener('mousemove', function (e) {
+    var r = plot.getBoundingClientRect(), x = e.clientX - r.left;
+    if (cur && x >= LEFT && x <= LEFT + PW && !dragging && !ov && !(e.target.closest && e.target.closest('#ovw'))) {
+      var t = T(x); xline.style.display = 'block'; xline.style.left = x + 'px';
+      badge.style.display = 'block'; badge.textContent = fmtClock(t) + '  (' + fmtOffset(t, cur.axis.admission) + ')';
+      var bw = badge.offsetWidth / 2; badge.style.left = Math.min(Math.max(x, bw + 2), W - bw - 2) + 'px';
+    } else { xline.style.display = 'none'; badge.style.display = 'none'; }
+    var el = e.target.closest ? e.target.closest('[data-t]') : null;
+    if (el && !dragging) {
+      tipEl.innerHTML = TIPS[Number(el.getAttribute('data-t'))]; tipEl.style.display = 'block';
+      var tw = tipEl.offsetWidth, th = tipEl.offsetHeight, px = e.clientX + 14, py = e.clientY + 14;
+      if (px + tw > window.innerWidth - 8) px = e.clientX - tw - 14; if (py + th > window.innerHeight - 8) py = e.clientY - th - 14;
+      tipEl.style.left = Math.max(8, px) + 'px'; tipEl.style.top = Math.max(8, py) + 'px';
+    } else tipEl.style.display = 'none';
+  });
+  plot.addEventListener('mouseleave', function () { xline.style.display = 'none'; badge.style.display = 'none'; tipEl.style.display = 'none'; });
+  plot.addEventListener('wheel', function (e) {
+    if (!(e.ctrlKey || e.metaKey) || !cur) return; e.preventDefault();
+    var r = plot.getBoundingClientRect(); zoom(e.deltaY < 0 ? 0.8 : 1.25, T(e.clientX - r.left));
+  }, { passive: false });
+
+  var dragging = false, sx = 0, sv = null;
+  $('lanes').addEventListener('pointerdown', function (e) { if (e.button !== 0 || !cur) return; dragging = true; sx = e.clientX; sv = view.slice(); $('lanes').classList.add('drag'); $('lanes').setPointerCapture(e.pointerId); tipEl.style.display = 'none'; });
+  $('lanes').addEventListener('pointermove', function (e) { if (!dragging) return; var dt = -(e.clientX - sx) / PW * (sv[1] - sv[0]); setView(sv[0] + dt, sv[1] + dt); });
+  $('lanes').addEventListener('click', function (e) {
+    if (Math.abs(e.clientX - sx) >= 4) return;
+    var tg = document.elementFromPoint(e.clientX, e.clientY) || e.target;   // pan handler captures the pointer, so e.target is the lane container
+    var m = tg.closest && tg.closest('[data-bal]'); if (m) { focusBal(Number(m.getAttribute('data-bal'))); return; }
+    var c = tg.closest && tg.closest('[data-mi]'); if (c) showSusc({ src: 'micro', i: Number(c.getAttribute('data-mi')) }, true);
+  });
+  $('balBox').addEventListener('click', function (e) {
+    var sb = e.target.closest('button[data-sb]'); if (sb) { var q = sb.getAttribute('data-sb').split(':'); showSusc({ src: 'bal', b: Number(q[0]), o: Number(q[1]) }, true); return; }
+    var b = e.target.closest('button[data-show]'); if (!b) return; var t = cur.bal[Number(b.getAttribute('data-show'))].t; setView(t - 36 * H, t + 36 * H); $('card').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
+  function end() { dragging = false; $('lanes').classList.remove('drag'); }
+  $('lanes').addEventListener('pointerup', end); $('lanes').addEventListener('pointercancel', end);
+
+  var ov = null, rw = $('rulerWrap');
+  rw.addEventListener('pointerdown', function (e) {
+    if (!cur || e.button !== 0 || !e.target.closest('#ovw')) return;
+    var x = e.clientX - $('ovw').getBoundingClientRect().left, A = cur.axis.start, span = cur.axis.end - A;
+    var x0 = LEFT + (view[0] - A) / span * PW, x1 = LEFT + (view[1] - A) / span * PW, mode = 'm';
+    if (Math.abs(x - x0) <= 7) mode = 'l'; else if (Math.abs(x - x1) <= 7) mode = 'r';
+    else if (!(x > x0 && x < x1)) { var half = (view[1] - view[0]) / 2, c = A + (x - LEFT) / PW * span; setView(c - half, c + half); }
+    ov = { mode: mode, sx: e.clientX, v: view.slice(), span: span }; rw.setPointerCapture(e.pointerId); e.preventDefault();
+  });
+  rw.addEventListener('pointermove', function (e) {
+    if (!ov) return; var dt = (e.clientX - ov.sx) / PW * ov.span, m = 30 * 60000;
+    if (ov.mode === 'm') setView(ov.v[0] + dt, ov.v[1] + dt); else if (ov.mode === 'l') setView(Math.min(ov.v[0] + dt, ov.v[1] - m), ov.v[1]); else setView(ov.v[0], Math.max(ov.v[1] + dt, ov.v[0] + m));
+  });
+  function ovEnd() { ov = null; } rw.addEventListener('pointerup', ovEnd); rw.addEventListener('pointercancel', ovEnd);
+
+  var rt = 0; window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(drawChart, 80); });
+  if (window.ResizeObserver) new ResizeObserver(function () { clearTimeout(rt); rt = setTimeout(drawChart, 60); }).observe($('card'));
+
+  function isDark() { var t = document.documentElement.getAttribute('data-theme'); return t ? t === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches; }
+  function themeLabel() { $('themeBtn').textContent = isDark() ? 'Light' : 'Dark'; }
+  $('themeBtn').onclick = function () { document.documentElement.setAttribute('data-theme', isDark() ? 'light' : 'dark'); themeLabel(); };
+  themeLabel();
+}
+
+/* ---------- boot ---------- */
+$('src').textContent = META.n + ' ICU hospitalizations · ' + META.source_label + ' · times in ' + TZ;
+$('foot').textContent = 'Shaded columns are ICU stays. Temperature and WBC bands use SIRS thresholds (temp > ' + SIRS.temp_high_c + ' or < ' + SIRS.temp_low_c + ' °C; WBC > ' + SIRS.wbc_high + ' or < ' + SIRS.wbc_low +
+  ' ×10³/µL). Vasopressor total is norepinephrine-equivalent: norepinephrine + epinephrine + phenylephrine ÷ 10 + dopamine ÷ 100 + vasopressin (units/min) × 2.5. ' + (META.temp_values_dropped ? META.temp_values_dropped + ' implausible temperature values were excluded. ' : '') +
+  (META.bal_synthetic ? 'BAL results are SYNTHETIC examples (the public demo has none), generated to follow the BAL schema. ' : '') + 'Public de-identified demo data with shifted dates.';
+buildFilterUi(); wire();
+// open on a patient that shows every lane: ventilated, on pressors, positive culture, several antimicrobials
+var best = ROWS.slice().sort(function (a, b) {
+  function sc(r) { return (r.positive_culture ? 3 : 0) + (r.blood_culture_positive ? 1 : 0) + (r.pressor ? 3 : 0) + (r.imv ? 3 : 0) + Math.min(r.n_antibiotics, 4) + (r.fever ? 1 : 0) + (r.n_icu_stays > 1 ? 5 : 0) - Math.abs((r.icu_hours || 0) - 150) / 60; }
+  return sc(b) - sc(a);
+})[0];
+select(best.id);
+})();
+</script>

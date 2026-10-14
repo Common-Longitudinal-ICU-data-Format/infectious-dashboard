@@ -1,0 +1,55 @@
+# CLIF Infection Timeline Dashboard - configuration
+# Paths are relative to this file unless absolute.
+
+# Folder that holds the CLIF tables (clif_patient.<ext>, clif_adt.<ext>, ...)
+clif_data_dir: /Users/cag895/Desktop/mimic-demo-data-2.1.0   # <- put your CLIF folder here (absolute paths work too)
+filetype: parquet               # csv | parquet
+
+# Where the exporter writes JSON that the React app reads
+output_dir: app/public/data
+
+# Time zone used to DISPLAY clock times (CLIF stores UTC).
+# The public MIMIC demo uses date-shifted years, so UTC is the sensible default.
+timezone: UTC
+
+# Which hospitalizations to export
+icu_only: true                # only hospitalizations with >=1 ICU ADT row
+max_patients: null            # e.g. 25 for a quick test export
+
+# X-axis start: "admission" = hospital admission_dttm (default),
+#               "first_contact" = earliest ADT in_dttm (e.g. ED arrival)
+axis_start: admission
+
+# Optional per-table file name overrides
+tables: {}
+#  microbiology_culture: clif_microbiology_culture.csv
+
+# Timeline tuning
+icu_merge_gap_hours: 6        # ICU->ICU transfers within this gap form one ICU stay bar
+resp_carry_forward_hours: 12  # max gap before a respiratory device band is closed
+resp_last_record_hours: 1     # width given to the final record of a band
+temp_valid_range_c: [30, 45]  # values outside are treated as charting errors and dropped
+
+# SIRS thresholds used for the shaded bands
+sirs:
+  temp_high_c: 38.0
+  temp_low_c: 36.0
+  wbc_high: 12.0              # x10^3/uL
+  wbc_low: 4.0
+
+# Extra infection-related labs offered in the "Other labs" lane (CLIF lab_category)
+extra_labs: [lactate, crp, creatinine, neutrophils_absolute, platelet_count, procalcitonin]
+
+# Optional: a wide BAL results table (one row per lavage; columns in export/bal_schema.csv).
+# The public MIMIC demo has none, so this points at SYNTHETIC examples made by
+#   python3 export/make_synthetic_bal.py        (set to null to hide the BAL lane and box)
+bal_file: ./data/synthetic/bal_synthetic.csv
+
+# Susceptibilities: the CLIF 2.1 microbiology_susceptibility table is read automatically from clif_data_dir
+# (clif_microbiology_susceptibility.<ext>; columns organism_id, antimicrobial_name, antimicrobial_category,
+# sensitivity_name, susceptibility_name, susceptibility_category). organism_id links to microbiology_culture
+# and to BAL organism_id1..6. The public demo has no such table, so the demo points at SYNTHETIC data from
+#   python3 export/make_synthetic_susceptibility.py      (run after make_synthetic_bal.py)
+# For real data: delete the two lines below (or set susceptibility_file: null).
+susceptibility_file: ./data/synthetic/clif_microbiology_susceptibility.csv
+susceptibility_synthetic: true                 # labels the panel "Synthetic example data"
